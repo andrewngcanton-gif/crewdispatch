@@ -48,6 +48,10 @@ TMP="$(/usr/bin/mktemp -d /tmp/crewdispatch-installer.XXXXXX)"
 trap '/bin/rm -rf "$TMP"' EXIT
 /bin/mkdir -p "$TMP/payload"
 /usr/bin/unzip -q "$PAYLOAD" -d "$TMP/payload"
+# mktemp creates the root-owned directory as 0700. The managed installer runs
+# as the console user, so grant read/traverse access without making the staged
+# payload user-writable.
+/bin/chmod 0755 "$TMP" "$TMP/payload"
 
 TARGET="$USER_HOME/Library/Application Support/CrewDispatch/runtime"
 ACTION="install"

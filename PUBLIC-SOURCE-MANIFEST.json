@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "c7038021d06c2460453d2fb2c0bebc5e1eb20852",
+  "sourceCommit": "1d13c2c2de1d81151c6a3501807b6851f1d74b3e",
   "sourceDirty": false,
   "files": [
     {
@@ -61,7 +61,7 @@
     },
     {
       "path": "installers/macos/postinstall",
-      "sha256": "cd951576917bce70836c59870d984335ca2cfa26a5f665e41d87c73d70528ddd"
+      "sha256": "4294300e9f91eb1e8be7970e78fc9bd688db6f2e72145ccd2d4d522137bba4d6"
     },
     {
       "path": "installers/windows/CrewDispatch.nsi",
