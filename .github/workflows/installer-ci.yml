@@ -49,6 +49,13 @@ jobs:
           New-Item -ItemType Directory -Force installer-out/candidate | Out-Null
           Copy-Item (Join-Path $env:CREWDISPATCH_WINDOWS_CANDIDATE '*') installer-out/candidate -Force
           if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.2.exe)) { throw 'setup EXE missing' }
+      - name: Verify visible Windows welcome page
+        shell: pwsh
+        run: |
+          ./scripts/test-windows-installer-ui.ps1 `
+            -Setup installer-out/CrewDispatch-Setup-0.1.2.exe `
+            -Version 0.1.2 `
+            -Screenshot installer-out/windows-welcome.png
       - name: Silent install and uninstall lifecycle
         shell: pwsh
         run: |
@@ -73,6 +80,7 @@ jobs:
           path: |
             installer-out/CrewDispatch-Setup-0.1.2.exe
             installer-out/windows-installer.json
+            installer-out/windows-welcome.png
             installer-out/candidate/*.zip
             installer-out/candidate/*.json
             installer-out/candidate/*.sha256
