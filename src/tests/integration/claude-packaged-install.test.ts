@@ -18,6 +18,7 @@ import path from "node:path";
 import { McpStdioClient } from "../helpers/mcp-client";
 import { listClaudeBindings } from "../../claude/binding";
 import { RECOVERY_REQUEST_BUDGET_MS } from "../../daemon/client";
+import { resolveUserNodeRuntime } from "../../install/node-runtime";
 
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
 const ACCEPT_SOURCE_ROOT = process.env.JOBQUAY_ACCEPT_SOURCE_ROOT?.trim() || null;
@@ -55,7 +56,7 @@ function sha256(file: string): string {
 test("the packaged runtime carries the Claude assets and installs/wakes from its own layout", { timeout: 900000 }, async () => {
   if (ACCEPT_SOURCE_ROOT) {
     const pkg = JSON.parse(fs.readFileSync(path.join(SOURCE_ROOT, "package.json"), "utf8")) as Record<string, unknown>;
-    assert.equal(pkg.version, "0.1.0", "exact-artifact Claude acceptance requires the 0.1.0 candidate");
+    assert.equal(pkg.version, "0.1.1", "exact-artifact Claude acceptance requires the 0.1.1 candidate");
     assert.equal(pkg.license, "Apache-2.0");
   }
   const tempRoot = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "jobquay-claude-packaged-"));
@@ -103,7 +104,11 @@ test("the packaged runtime carries the Claude assets and installs/wakes from its
     const userConfig = JSON.parse(fs.readFileSync(path.join(configDir, ".claude.json"), "utf8")) as {
       mcpServers: { crewdispatch: { command: string; args: string[] } };
     };
-    assert.equal(userConfig.mcpServers.crewdispatch.command, process.execPath);
+    assert.equal(
+      path.resolve(userConfig.mcpServers.crewdispatch.command),
+      path.resolve(resolveUserNodeRuntime()!.path),
+      "Claude MCP config pins the stable user-managed Node path discovered from PATH"
+    );
     const serverEntry = path.resolve(userConfig.mcpServers.crewdispatch.args[0]!);
     assert.equal(serverEntry, path.join(runtime, "dist", "mcp", "server.js"));
     assert.equal(serverEntry.startsWith(SOURCE_ROOT), false, "the packaged entry must not point back at its source candidate/checkout");

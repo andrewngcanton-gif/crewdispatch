@@ -1,6 +1,6 @@
 {
   "name": "crewdispatch",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "license": "Apache-2.0",
   "description": "CrewDispatch — local orchestration for durable long-running coding-agent jobs with Command Code and WorkBuddy AI adapters.",
@@ -29,6 +29,8 @@
     "test:integration:install": "npm run build && node --test dist/tests/integration/install-cli.test.js",
     "test:integration:release-candidate": "npm run build && node --test dist/tests/integration/release-candidate.test.js",
     "release:candidate": "npm run build && node scripts/build-release-candidate.cjs",
+    "installer:macos": "node scripts/build-macos-installer.cjs",
+    "installer:windows": "node scripts/build-windows-installer.cjs",
     "test:e2e:command-code": "npm run build && node dist/cli/one-shot-cli.js",
     "test:e2e:command-code:installed": "npm run build && node --test dist/tests/e2e/installed-command-code-real-cli.e2e.js",
     "test:e2e:command-code:acp": "npm run build && node --test dist/tests/e2e/installed-command-code-acp.e2e.js",

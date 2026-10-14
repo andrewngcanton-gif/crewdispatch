@@ -13,7 +13,7 @@ const UTF8_FLAG = 0x0800;
 const ZIP32_LIMIT = 0xffffffff;
 const UNIX_VERSION_MADE_BY = (3 << 8) | 20;
 const POSIX_REGULAR_FILE = 0o100000;
-const APPROVED_RELEASE_VERSION = "0.1.0";
+const APPROVED_RELEASE_VERSION = "0.1.1";
 const APPROVED_RELEASE_LICENSE = "Apache-2.0";
 const APPROVED_PROVIDER_SCOPE = "command-code+workbuddy-ai";
 const PRODUCT_LICENSE_FILE = "LICENSE";
@@ -361,7 +361,7 @@ function main() {
   if (String(pluginJson.version) !== APPROVED_RELEASE_VERSION) metadataBlockers.push(`plugin version must be ${APPROVED_RELEASE_VERSION}`);
   if (String(packageJson.version) !== String(pluginJson.version)) metadataBlockers.push("package and plugin versions are not aligned");
   if (packageJson.license !== APPROVED_RELEASE_LICENSE) metadataBlockers.push(`package license must be ${APPROVED_RELEASE_LICENSE}`);
-  if (args.scope !== APPROVED_PROVIDER_SCOPE) metadataBlockers.push(`0.1.0 provider scope must be ${APPROVED_PROVIDER_SCOPE}`);
+  if (args.scope !== APPROVED_PROVIDER_SCOPE) metadataBlockers.push(`${APPROVED_RELEASE_VERSION} provider scope must be ${APPROVED_PROVIDER_SCOPE}`);
   const blockers = [
     ...metadataBlockers,
     "public release acceptance gates are not completed (MAC-60I / MAC-REL-01..08)"

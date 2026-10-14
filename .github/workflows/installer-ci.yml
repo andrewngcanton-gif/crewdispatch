@@ -1,0 +1,199 @@
+name: Installer CI
+
+on:
+  push:
+    branches: [installer-0.1.1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-installer:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify complete-uninstall safety on Windows
+        shell: pwsh
+        run: node --test dist/tests/unit/data-root-purge.test.js dist/tests/integration/complete-uninstall.test.js
+      - name: Build exact Windows payload
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force candidate | Out-Null
+          node scripts/build-release-candidate.cjs --output-dir candidate --scope command-code+workbuddy-ai | Tee-Object -FilePath candidate/report.stdout.json
+          $zip = Get-ChildItem candidate -Filter '*.zip' | Select-Object -First 1
+          if (-not $zip) { throw 'Windows payload ZIP missing' }
+          Expand-Archive -Path $zip.FullName -DestinationPath candidate/unpacked -Force
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis -y --no-progress
+      - name: Build setup EXE
+        shell: pwsh
+        run: |
+          $makensis = 'C:\Program Files (x86)\NSIS\makensis.exe'
+          if (-not (Test-Path $makensis)) { $makensis = 'C:\Program Files\NSIS\makensis.exe' }
+          if (-not (Test-Path $makensis)) { throw 'makensis.exe not found after NSIS install' }
+          $env:MAKENSIS = $makensis
+          New-Item -ItemType Directory -Force installer-out | Out-Null
+          node scripts/build-windows-installer.cjs --payload-dir candidate/unpacked --output installer-out/CrewDispatch-Setup-0.1.1.exe | Tee-Object -FilePath installer-out/windows-installer.json
+          if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.1.exe)) { throw 'setup EXE missing' }
+      - name: Silent install and uninstall lifecycle
+        shell: pwsh
+        run: |
+          $setup = (Resolve-Path installer-out/CrewDispatch-Setup-0.1.1.exe).Path
+          $install = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "setup failed: $($install.ExitCode)" }
+          $target = Join-Path $env:LOCALAPPDATA 'Programs\CrewDispatch'
+          if (-not (Test-Path (Join-Path $target '.jobquay-install.json'))) { throw 'managed install marker missing' }
+          $pkg = Get-Content (Join-Path $target 'package.json') -Raw | ConvertFrom-Json
+          if ($pkg.version -ne '0.1.1') { throw "unexpected installed version $($pkg.version)" }
+          if (-not (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrewDispatch')) { throw 'Installed Apps registration missing' }
+          $uninstaller = Join-Path $target 'Uninstall.exe'
+          if (-not (Test-Path $uninstaller)) { throw 'uninstaller missing' }
+          $remove = Start-Process -FilePath $uninstaller -ArgumentList '/S' -Wait -PassThru
+          if ($remove.ExitCode -ne 0) { throw "uninstall failed: $($remove.ExitCode)" }
+          if (Test-Path (Join-Path $target '.jobquay-install.json')) { throw 'managed install marker survived uninstall' }
+          if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrewDispatch') { throw 'Installed Apps registration survived uninstall' }
+          if (Test-Path $target) { throw 'fresh install target survived uninstall' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CrewDispatch-0.1.1-windows-installer-ci
+          path: |
+            installer-out/CrewDispatch-Setup-0.1.1.exe
+            installer-out/windows-installer.json
+            candidate/*.zip
+            candidate/*.json
+            candidate/*.sha256
+
+  macos-payload:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            expected_arch: arm64
+            artifact_arch: arm64
+          - os: macos-15-intel
+            expected_arch: x64
+            artifact_arch: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+          cache: npm
+      - run: npm ci
+      - name: Verify runner architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p 'process.arch')" = '${{ matrix.expected_arch }}'
+      - run: npm run build
+      - name: Verify complete-uninstall safety
+        shell: bash
+        run: node --test dist/tests/unit/data-root-purge.test.js dist/tests/integration/complete-uninstall.test.js
+      - name: Build exact macOS payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p candidate
+          node scripts/build-release-candidate.cjs --output-dir candidate --scope command-code+workbuddy-ai | tee candidate/report.stdout.json
+          ZIP="$(find candidate -maxdepth 1 -name '*.zip' -print -quit)"
+          test -n "$ZIP"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CrewDispatch-0.1.1-macos-payload-${{ matrix.artifact_arch }}
+          path: |
+            candidate/*.zip
+            candidate/*.json
+            candidate/*.sha256
+
+  macos-installer-package:
+    needs: macos-payload
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: CrewDispatch-0.1.1-macos-payload-*
+          path: candidates
+          merge-multiple: true
+      - name: Build dual-architecture package
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARM="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.1-darwin-arm64-*.zip' -print -quit)"
+          X64="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.1-darwin-x64-*.zip' -print -quit)"
+          test -n "$ARM"
+          test -n "$X64"
+          mkdir -p installer-out
+          node scripts/build-macos-installer.cjs --arm64-archive "$ARM" --x64-archive "$X64" --output installer-out/CrewDispatch-0.1.1.pkg | tee installer-out/macos-installer.json
+          /bin/zsh -n installers/macos/postinstall
+          pkgutil --expand installer-out/CrewDispatch-0.1.1.pkg installer-out/expanded
+          test -f installer-out/expanded/Scripts/postinstall
+          test -f installer-out/expanded/Scripts/payload-arm64.zip
+          test -f installer-out/expanded/Scripts/payload-x86_64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CrewDispatch-0.1.1-macos-installer-ci
+          path: |
+            installer-out/CrewDispatch-0.1.1.pkg
+            installer-out/macos-installer.json
+
+  macos-installer-lifecycle:
+    needs: macos-installer-package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            expected_uname: arm64
+          - os: macos-15-intel
+            expected_uname: x86_64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.3'
+      - uses: actions/download-artifact@v4
+        with:
+          name: CrewDispatch-0.1.1-macos-installer-ci
+          path: installer-out
+      - name: Install and completely uninstall the exact package
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = '${{ matrix.expected_uname }}'
+          NODE_DIR="$(dirname "$(command -v node)")"
+          printf 'export PATH="%s:$PATH"\n' "$NODE_DIR" >> "$HOME/.zprofile"
+          sudo installer -pkg installer-out/CrewDispatch-0.1.1.pkg -target /
+          TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
+          test -f "$TARGET/.jobquay-install.json"
+          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.1'
+          test -x "$HOME/Applications/CrewDispatch Dashboard.command"
+          test -x "$HOME/Applications/CrewDispatch Uninstaller.command"
+          case '${{ matrix.expected_uname }}' in
+            arm64) file "$TARGET/dist/native/macos-process-info" | grep -q 'arm64' ;;
+            x86_64) file "$TARGET/dist/native/macos-process-info" | grep -q 'x86_64' ;;
+          esac
+          printf 'y\n\n' | "$HOME/Applications/CrewDispatch Uninstaller.command"
+          test ! -e "$TARGET"
+          test ! -e "$HOME/Library/Application Support/CrewDispatch"
+          test ! -e "$HOME/Library/Application Support/JobQuay"
+          test ! -e "$HOME/Library/LaunchAgents/com.crewdispatch.dashboard.plist"
+          test ! -e "$HOME/Applications/CrewDispatch Dashboard.command"
+          test ! -e "$HOME/Applications/CrewDispatch Uninstaller.command"
+          if pkgutil --pkg-info com.crewdispatch.installer >/dev/null 2>&1; then
+            echo 'package receipt survived uninstall' >&2
+            exit 1
+          fi

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.1 — unreleased
+
+Installer-focused patch release.
+
+- Adds a normal per-user Windows setup executable.
+- Adds one macOS installer package that selects Apple Silicon or Intel payload automatically.
+- Adds a unified complete-uninstall path that removes managed program files, Dashboard autostart, and unmodified Codex/Claude integration.
+- Adds an explicit **remove all CrewDispatch data** option for jobs, logs, settings, and history; Node.js, Command Code, and WorkBuddy AI are never removed.
+- Keeps user-edited or foreign files/configuration fail-closed and reports them instead of deleting them.
+
 ## 0.1.0 — 2026-10-14
 
 Initial public developer release.

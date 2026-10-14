@@ -13,39 +13,21 @@ Install and sign in to Command Code and/or WorkBuddy AI using the provider's own
 
 ## 2. Install CrewDispatch
 
-Windows users unpack `CrewDispatch-0.1.0-Windows-x64.zip`. macOS users unpack `CrewDispatch-0.1.0-macOS.zip`, choose the `arm64` package for Apple Silicon or the `x86_64` package for Intel, then unpack that package.
+Windows: download and run `CrewDispatch-Setup-0.1.1.exe`.
 
-Choose an absolute installation directory that does not already exist:
+macOS: download and open `CrewDispatch-0.1.1.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
 
-```text
-node dist/cli/install-cli.js install --target <absolute-directory>
-```
-
-The installer stages production dependencies, verifies the managed payload, and creates target-local wrappers. It does not add them to your global `PATH`.
+Both installers use the same managed CrewDispatch install/doctor/uninstall logic. They do not add CrewDispatch to the global `PATH`.
 
 ## 3. Verify the installation
 
-```text
-node <target>/dist/cli/install-cli.js doctor --target <target>
-```
+After installation, open the Dashboard launcher. Advanced users can run the target-local `doctor` command directly.
 
 Doctor checks the installed payload, Node requirement, plugin/MCP entry, wrappers, runtime dependencies, local MCP/Hub smoke probes, notices/license, and Dashboard autostart state without sending a paid/provider model prompt.
 
 ## 4. Open the Dashboard
 
-macOS/Linux-style path:
-
-```text
-<target>/bin/crewdispatch web
-```
-
-Windows:
-
-```text
-<target>\bin\crewdispatch.cmd web
-```
-
-The Dashboard binds to loopback only.
+Use the **CrewDispatch Dashboard** launcher installed for your platform. The Dashboard binds to loopback only.
 
 ## 5. Configure a caller
 

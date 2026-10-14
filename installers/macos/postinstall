@@ -1,0 +1,119 @@
+#!/bin/zsh
+set -eu
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ARCH="$(/usr/bin/uname -m)"
+case "$ARCH" in
+  arm64) PAYLOAD="$SCRIPT_DIR/payload-arm64.zip" ;;
+  x86_64) PAYLOAD="$SCRIPT_DIR/payload-x86_64.zip" ;;
+  *) echo "Unsupported macOS architecture: $ARCH" >&2; exit 1 ;;
+esac
+
+cd "$SCRIPT_DIR"
+/usr/bin/shasum -a 256 -c SHA256SUMS.txt >/dev/null
+
+CONSOLE_USER="$(/usr/bin/stat -f '%Su' /dev/console)"
+if [[ -z "$CONSOLE_USER" || "$CONSOLE_USER" == "root" || "$CONSOLE_USER" == "loginwindow" ]]; then
+  echo "CrewDispatch must be installed while a normal user is logged in." >&2
+  exit 1
+fi
+USER_HOME="$(/usr/bin/dscl . -read "/Users/$CONSOLE_USER" NFSHomeDirectory | /usr/bin/awk '{print $2}')"
+USER_GROUP="$(/usr/bin/id -gn "$CONSOLE_USER")"
+if [[ -z "$USER_HOME" || ! -d "$USER_HOME" ]]; then
+  echo "Could not resolve the logged-in user's home directory." >&2
+  exit 1
+fi
+
+NODE="$(/usr/bin/sudo -H -u "$CONSOLE_USER" /bin/zsh -lc 'command -v node 2>/dev/null' 2>/dev/null | /usr/bin/grep '^/' | /usr/bin/tail -n 1 || true)"
+if [[ -z "$NODE" || ! -x "$NODE" ]]; then
+  NODE="$(/usr/bin/sudo -H -u "$CONSOLE_USER" /bin/zsh -lic 'command -v node 2>/dev/null' 2>/dev/null | /usr/bin/grep '^/' | /usr/bin/tail -n 1 || true)"
+fi
+if [[ -z "$NODE" || ! -x "$NODE" ]]; then
+  for CANDIDATE in /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
+    if [[ -x "$CANDIDATE" ]]; then NODE="$CANDIDATE"; break; fi
+  done
+fi
+if [[ -z "$NODE" || ! -x "$NODE" ]]; then
+  echo "CrewDispatch requires Node.js 22 or newer in the logged-in user's PATH." >&2
+  exit 1
+fi
+if ! /usr/bin/sudo -H -u "$CONSOLE_USER" "$NODE" -e 'process.exit(parseInt(process.versions.node,10)>=22?0:1)'; then
+  echo "CrewDispatch requires Node.js 22 or newer." >&2
+  exit 1
+fi
+NODE_DIR="$(/usr/bin/dirname "$NODE")"
+USER_PATH="$NODE_DIR:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+TMP="$(/usr/bin/mktemp -d /tmp/crewdispatch-installer.XXXXXX)"
+trap '/bin/rm -rf "$TMP"' EXIT
+/usr/bin/ditto -x -k "$PAYLOAD" "$TMP/payload"
+
+TARGET="$USER_HOME/Library/Application Support/CrewDispatch/runtime"
+ACTION="install"
+if [[ -f "$TARGET/.jobquay-install.json" ]]; then
+  ACTION="upgrade"
+fi
+/usr/bin/sudo -H -u "$CONSOLE_USER" /usr/bin/env HOME="$USER_HOME" USER="$CONSOLE_USER" PATH="$USER_PATH" \
+  "$NODE" "$TMP/payload/dist/cli/install-cli.js" "$ACTION" --target "$TARGET"
+
+APPS="$USER_HOME/Applications"
+/usr/bin/sudo -H -u "$CONSOLE_USER" /bin/mkdir -p "$APPS"
+DASHBOARD="$APPS/CrewDispatch Dashboard.command"
+UNINSTALLER="$APPS/CrewDispatch Uninstaller.command"
+
+/bin/cat > "$DASHBOARD" <<'EOF'
+#!/bin/zsh
+set -e
+TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
+exec "$TARGET/bin/crewdispatch" web
+EOF
+
+/bin/cat > "$UNINSTALLER" <<'EOF'
+#!/bin/zsh
+set -u
+TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
+if [[ ! -f "$TARGET/dist/cli/install-cli.js" ]]; then
+  echo "CrewDispatch is already absent from the standard install location."
+  read -r "_?Press Return to close..."
+  exit 0
+fi
+NODE="$(/bin/zsh -lc 'command -v node 2>/dev/null' 2>/dev/null | /usr/bin/grep '^/' | /usr/bin/tail -n 1 || true)"
+if [[ -z "$NODE" || ! -x "$NODE" ]]; then
+  NODE="$(/bin/zsh -lic 'command -v node 2>/dev/null' 2>/dev/null | /usr/bin/grep '^/' | /usr/bin/tail -n 1 || true)"
+fi
+if [[ -z "$NODE" || ! -x "$NODE" ]]; then
+  for CANDIDATE in /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
+    if [[ -x "$CANDIDATE" ]]; then NODE="$CANDIDATE"; break; fi
+  done
+fi
+if [[ -z "$NODE" || ! -x "$NODE" ]]; then
+  echo "Node.js 22+ is required to run the safe CrewDispatch uninstaller."
+  read -r "_?Press Return to close..."
+  exit 1
+fi
+ARGS=(complete-uninstall --target "$TARGET")
+echo "CrewDispatch will remove its program files and unmodified Codex/Claude integration."
+read -r "answer?Also remove all CrewDispatch jobs, logs, settings and history? [y/N] "
+case "$answer" in
+  y|Y|yes|YES) ARGS+=(--purge-data) ;;
+esac
+"$NODE" "$TARGET/dist/cli/install-cli.js" "${ARGS[@]}"
+STATUS=$?
+if [[ $STATUS -eq 0 ]]; then
+  /bin/rm -f "$HOME/Applications/CrewDispatch Dashboard.command"
+  /bin/rmdir "$HOME/Library/Application Support/CrewDispatch" 2>/dev/null || true
+  echo "CrewDispatch has been uninstalled. Node.js, Command Code and WorkBuddy AI were not removed."
+  if /usr/sbin/pkgutil --pkg-info com.crewdispatch.installer >/dev/null 2>&1; then
+    echo "Removing the macOS installer receipt may ask for your password."
+    /usr/bin/sudo /usr/sbin/pkgutil --forget com.crewdispatch.installer >/dev/null 2>&1 || true
+  fi
+  /bin/rm -f "$0"
+fi
+read -r "_?Press Return to close..."
+exit $STATUS
+EOF
+
+/bin/chmod 0755 "$DASHBOARD" "$UNINSTALLER"
+/usr/sbin/chown "$CONSOLE_USER:$USER_GROUP" "$DASHBOARD" "$UNINSTALLER"
+
+exit 0

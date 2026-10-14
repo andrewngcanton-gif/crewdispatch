@@ -767,7 +767,7 @@ export function install(targetArg: string): OperationResult {
       runtimeLicenses: [...RUNTIME_LICENSES],
       productLicense: managedProductLicense(marker),
       thirdPartyNotices: managedNotice(marker),
-      licenseStatus: "CrewDispatch 0.1.0 is licensed under Apache-2.0; package.json remains private only to prevent accidental npm publication.",
+      licenseStatus: `CrewDispatch ${marker.packageVersion} is licensed under Apache-2.0; package.json remains private only to prevent accidental npm publication.`,
       dataRoot,
       autostart
     };
@@ -969,6 +969,39 @@ export function uninstall(targetArg: string): OperationResult {
     dataRootUntouched: true,
     autostart
   };
+}
+
+export function validateDataRootForPurge(dataRootArg: string, targetArg?: string | null): string {
+  if (!path.isAbsolute(dataRootArg)) {
+    fail("data_root_must_be_absolute", "The CrewDispatch data root must be an absolute path before it can be removed.", { dataRoot: dataRootArg });
+  }
+  const dataRoot = path.resolve(dataRootArg);
+  const leaf = path.basename(dataRoot).toLowerCase();
+  if (leaf !== "jobquay" && leaf !== "crewdispatch") {
+    fail(
+      "data_root_not_dedicated",
+      "Refusing to recursively remove a data root whose final directory name is not JobQuay or CrewDispatch.",
+      { dataRoot }
+    );
+  }
+  if (targetArg && pathsOverlap(dataRoot, path.resolve(targetArg))) {
+    fail("data_root_inside_install", "Refusing to purge a data root that overlaps the installation directory.", { dataRoot, target: path.resolve(targetArg) });
+  }
+  // Reuse the install-target safety policy: this rejects filesystem roots,
+  // provider/system configuration trees, and any path containing a link/junction.
+  validateTarget(dataRoot, null);
+  if (fs.existsSync(dataRoot)) {
+    checkPathChain(dataRoot, false);
+    scanFiles(dataRoot);
+  }
+  return dataRoot;
+}
+
+export function purgeDataRoot(dataRootArg: string, targetArg?: string | null): { path: string; removed: boolean; alreadyAbsent: boolean } {
+  const dataRoot = validateDataRootForPurge(dataRootArg, targetArg);
+  if (!fs.existsSync(dataRoot)) return { path: dataRoot, removed: false, alreadyAbsent: true };
+  fs.rmSync(dataRoot, { recursive: true, force: false });
+  return { path: dataRoot, removed: true, alreadyAbsent: false };
 }
 
 export function inspectManagedTarget(targetArg: string): {

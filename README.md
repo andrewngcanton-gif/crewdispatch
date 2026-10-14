@@ -12,12 +12,12 @@ CrewDispatch does not modify the global `PATH`, does not install provider accoun
 
 ## Downloads
 
-The GitHub Release provides two binary downloads:
+The latest GitHub Release provides normal installers:
 
-- `CrewDispatch-0.1.0-Windows-x64.zip`
-- `CrewDispatch-0.1.0-macOS.zip` — contains the verified Apple Silicon (`arm64`) and Intel (`x86_64`) packages.
+- `CrewDispatch-Setup-0.1.1.exe` — Windows x64, per-user installer.
+- `CrewDispatch-0.1.1.pkg` — macOS installer for Apple Silicon and Intel.
 
-GitHub also provides source-code archives automatically.
+GitHub also provides source-code archives automatically. The 0.1.0 manual ZIPs remain available on the historical 0.1.0 release.
 
 ## Main features
 
@@ -28,27 +28,13 @@ GitHub also provides source-code archives automatically.
 - Managed install, doctor, upgrade, and uninstall with preservation of user data and edited/unowned files.
 - Optional Codex and Claude caller integrations.
 
-## Install from a release ZIP
+## Install
 
-Unpack the release, then run the installer with an absolute target directory:
+Download the installer for your platform and open it. The installer checks the Node.js 22+ prerequisite and installs CrewDispatch for the current user without modifying the global `PATH`.
 
-```text
-node dist/cli/install-cli.js install --target <absolute-directory>
-```
+Windows adds Start Menu entries for the Dashboard and uninstaller. macOS installs the runtime in the current user's Application Support directory and adds Dashboard / Uninstaller launchers under `~/Applications`.
 
-The installed command wrappers are target-local:
-
-```text
-<target>/bin/crewdispatch web
-```
-
-On Windows the wrapper is `<target>\bin\crewdispatch.cmd`.
-
-Run a health check at any time:
-
-```text
-node <target>/dist/cli/install-cli.js doctor --target <target>
-```
+Advanced users can still use the managed CLI installer from a source/release payload.
 
 See [Getting started](docs/getting-started.md) for the complete first-run flow.
 
