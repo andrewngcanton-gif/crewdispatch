@@ -17,6 +17,8 @@ Windows: download and run `CrewDispatch-Setup-0.1.1.exe`.
 
 macOS: download and open `CrewDispatch-0.1.1.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
 
+The macOS package is unsigned/not notarized. If macOS blocks it, use **Open Anyway** in System Settings → Privacy & Security.
+
 Both installers use the same managed CrewDispatch install/doctor/uninstall logic. They do not add CrewDispatch to the global `PATH`.
 
 ## 3. Verify the installation

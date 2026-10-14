@@ -46,7 +46,8 @@ USER_PATH="$NODE_DIR:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/s
 
 TMP="$(/usr/bin/mktemp -d /tmp/crewdispatch-installer.XXXXXX)"
 trap '/bin/rm -rf "$TMP"' EXIT
-/usr/bin/ditto -x -k "$PAYLOAD" "$TMP/payload"
+/bin/mkdir -p "$TMP/payload"
+/usr/bin/unzip -q "$PAYLOAD" -d "$TMP/payload"
 
 TARGET="$USER_HOME/Library/Application Support/CrewDispatch/runtime"
 ACTION="install"

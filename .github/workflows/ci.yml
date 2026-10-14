@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, installer-0.1.1]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

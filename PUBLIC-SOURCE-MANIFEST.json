@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "ff1a9e9a97b2d19e3e71c958bdcc2728a99f56cd",
+  "sourceCommit": "c7038021d06c2460453d2fb2c0bebc5e1eb20852",
   "sourceDirty": false,
   "files": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "eab04bfdd38d81d6e2fbf75d05f12a92802a7bd7a37af37c47c38c0c1ae202cd"
+      "sha256": "67a6d025caf5170ef07a0ec8b33eedc4821ae55d6d089a649b4cb825e3a7dfa6"
     },
     {
       "path": ".github/workflows/installer-ci.yml",
@@ -37,7 +37,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "50a8c52867ba07ff6bc0ed5d7b90f2c1ffe22a923e629844e857f0e897e7265d"
+      "sha256": "798884e8bfbb170d1d6ab021ef0a8214350712e771b1c9421e16f677acb39155"
     },
     {
       "path": "THIRD_PARTY_NOTICES",
@@ -53,7 +53,7 @@
     },
     {
       "path": "docs/getting-started.md",
-      "sha256": "17f8ed86a6c5a0c9169616501d34ec740d3205339955dec41735f196c016676f"
+      "sha256": "b5fbe17320ab6815cdac916591465999751b4b0d379ef7c079f4b765b66233fc"
     },
     {
       "path": "docs/uninstall.md",
@@ -61,7 +61,7 @@
     },
     {
       "path": "installers/macos/postinstall",
-      "sha256": "0a805b4e154a70c25018d8bbd784b7bada7849dc3bad5672817d2fb54ca6a581"
+      "sha256": "cd951576917bce70836c59870d984335ca2cfa26a5f665e41d87c73d70528ddd"
     },
     {
       "path": "installers/windows/CrewDispatch.nsi",
