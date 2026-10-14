@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createCliIsolation } from "../../cli/run-isolation";
-import { DASHBOARD_FIRST_USE_HINT } from "../../onboarding/dashboard-hint";
+import { dashboardFirstUseHint } from "../../onboarding/dashboard-hint";
 import { McpStdioClient } from "../helpers/mcp-client";
 
 const MCP_ENTRY = path.join(__dirname, "..", "..", "mcp", "server.js");
@@ -34,27 +34,33 @@ async function waitTerminal(client: McpStdioClient, id: string): Promise<void> {
   }
 }
 
-test("MCP surfaces the Dashboard hint only on the first accepted dispatch for a data root", { timeout: 30000 }, async () => {
+test("MCP surfaces the exact Dashboard URL once per caller conversation", { timeout: 45000 }, async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jobquay-mcp-dashboard-hint-"));
   const root = path.join(dir, "root");
   const iso = createCliIsolation({ baseDir: dir, tempPrefix: "iso-dashboard-hint-" });
   const project = path.join(iso.root, "project");
   const fixture = path.join(dir, "fixture.js");
+  const port = 30123;
   fs.mkdirSync(project, { recursive: true });
   fs.writeFileSync(fixture, fixtureEcho(), "utf8");
-  const env = { ...iso.env, JOBQUAY_DATA_ROOT: root, JOBQUAY_TEST_FIXTURE: fixture };
+  const env = { ...iso.env, JOBQUAY_DATA_ROOT: root, JOBQUAY_TEST_FIXTURE: fixture, HUB_PORT: String(port) };
   const client = new McpStdioClient(MCP_ENTRY, env, dir);
   try {
     await client.initialize();
-    const first = McpStdioClient.json(await client.callTool("jobquay_spawn", { task: "first", cwd: project }));
-    assert.equal(first.ok, true);
-    assert.equal(first.dashboard_hint, DASHBOARD_FIRST_USE_HINT);
-    await waitTerminal(client, String(first.job_id));
+    const firstA = McpStdioClient.json(await client.callTool("jobquay_spawn", { task: "first-a", cwd: project, codex_thread_id: "session-a" }));
+    assert.equal(firstA.ok, true);
+    assert.equal(firstA.dashboard_hint, dashboardFirstUseHint(`http://127.0.0.1:${port}/ui`));
+    await waitTerminal(client, String(firstA.job_id));
 
-    const second = McpStdioClient.json(await client.callTool("jobquay_spawn", { task: "second", cwd: project }));
-    assert.equal(second.ok, true);
-    assert.equal(Object.prototype.hasOwnProperty.call(second, "dashboard_hint"), false);
-    await waitTerminal(client, String(second.job_id));
+    const secondA = McpStdioClient.json(await client.callTool("jobquay_spawn", { task: "second-a", cwd: project, codex_thread_id: "session-a" }));
+    assert.equal(secondA.ok, true);
+    assert.equal(Object.prototype.hasOwnProperty.call(secondA, "dashboard_hint"), false);
+    await waitTerminal(client, String(secondA.job_id));
+
+    const firstB = McpStdioClient.json(await client.callTool("jobquay_spawn", { task: "first-b", cwd: project, codex_thread_id: "session-b" }));
+    assert.equal(firstB.ok, true);
+    assert.equal(firstB.dashboard_hint, dashboardFirstUseHint(`http://127.0.0.1:${port}/ui`));
+    await waitTerminal(client, String(firstB.job_id));
   } finally {
     await client.close();
     await McpStdioClient.cleanupWorkspace(root, dir);

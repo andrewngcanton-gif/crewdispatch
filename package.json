@@ -1,6 +1,6 @@
 {
   "name": "crewdispatch",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "license": "Apache-2.0",
   "description": "CrewDispatch — local orchestration for durable long-running coding-agent jobs with Command Code and WorkBuddy AI adapters.",

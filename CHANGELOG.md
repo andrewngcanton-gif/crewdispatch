@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3 — in validation
+
+Caller-integration and onboarding patch release.
+
+- Windows/macOS installers now configure Codex and Claude callers automatically.
+- Codex receives the CrewDispatch local plugin (MCP + skill) plus `/prompts:crewdispatch`; Claude receives MCP, hooks, skill, and `/crewdispatch`.
+- Complete uninstall removes only CrewDispatch-owned caller integration and preserves edited/foreign entries.
+- The exact Dashboard URL is shown once per caller conversation on its first accepted dispatch.
+
+
 ## 0.1.2 — 2026-10-14
 
 Installer UI patch release.

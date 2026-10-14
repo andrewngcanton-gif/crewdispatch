@@ -2,7 +2,7 @@ name: Installer CI
 
 on:
   push:
-    branches: [installer-0.1.2]
+    branches: [installer-0.1.3]
   workflow_dispatch:
 
 permissions:
@@ -45,27 +45,43 @@ jobs:
           if (-not (Test-Path $makensis)) { throw 'makensis.exe not found after NSIS install' }
           $env:MAKENSIS = $makensis
           New-Item -ItemType Directory -Force installer-out | Out-Null
-          node scripts/build-windows-installer.cjs --payload-dir $env:CREWDISPATCH_WINDOWS_UNPACKED --output installer-out/CrewDispatch-Setup-0.1.2.exe | Tee-Object -FilePath installer-out/windows-installer.json
+          node scripts/build-windows-installer.cjs --payload-dir $env:CREWDISPATCH_WINDOWS_UNPACKED --output installer-out/CrewDispatch-Setup-0.1.3.exe | Tee-Object -FilePath installer-out/windows-installer.json
           New-Item -ItemType Directory -Force installer-out/candidate | Out-Null
           Copy-Item (Join-Path $env:CREWDISPATCH_WINDOWS_CANDIDATE '*') installer-out/candidate -Force
-          if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.2.exe)) { throw 'setup EXE missing' }
+          if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.3.exe)) { throw 'setup EXE missing' }
       - name: Verify visible Windows welcome page
         shell: pwsh
         run: |
           ./scripts/test-windows-installer-ui.ps1 `
-            -Setup installer-out/CrewDispatch-Setup-0.1.2.exe `
-            -Version 0.1.2 `
+            -Setup installer-out/CrewDispatch-Setup-0.1.3.exe `
+            -Version 0.1.3 `
             -Screenshot installer-out/windows-welcome.png
       - name: Silent install and uninstall lifecycle
         shell: pwsh
         run: |
-          $setup = (Resolve-Path installer-out/CrewDispatch-Setup-0.1.2.exe).Path
+          $setup = (Resolve-Path installer-out/CrewDispatch-Setup-0.1.3.exe).Path
           $install = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "setup failed: $($install.ExitCode)" }
           $target = Join-Path $env:LOCALAPPDATA 'Programs\CrewDispatch'
           if (-not (Test-Path (Join-Path $target '.jobquay-install.json'))) { throw 'managed install marker missing' }
           $pkg = Get-Content (Join-Path $target 'package.json') -Raw | ConvertFrom-Json
-          if ($pkg.version -ne '0.1.2') { throw "unexpected installed version $($pkg.version)" }
+          if ($pkg.version -ne '0.1.3') { throw "unexpected installed version $($pkg.version)" }
+          $codexPrompt = Join-Path $HOME '.codex\prompts\crewdispatch.md'
+          $codexManifest = Join-Path $HOME '.codex\crewdispatch-install.json'
+          $claudeCommand = Join-Path $HOME '.claude\commands\crewdispatch.md'
+          $claudeSkill = Join-Path $HOME '.claude\skills\crewdispatch\SKILL.md'
+          $claudeManifest = Join-Path $HOME '.claude\crewdispatch-install.json'
+          foreach ($file in @($codexPrompt, $codexManifest, $claudeCommand, $claudeSkill, $claudeManifest)) {
+            if (-not (Test-Path $file)) { throw "caller integration missing: $file" }
+          }
+          $claudeConfig = Join-Path $HOME '.claude.json'
+          if (-not (Test-Path $claudeConfig)) { throw 'Claude user MCP config missing' }
+          $claudeJson = Get-Content $claudeConfig -Raw | ConvertFrom-Json
+          if (-not $claudeJson.mcpServers.crewdispatch) { throw 'Claude CrewDispatch MCP registration missing' }
+          $claudeSettingsFile = Join-Path $HOME '.claude\settings.json'
+          if (-not (Test-Path $claudeSettingsFile)) { throw 'Claude settings/hooks file missing' }
+          $claudeSettings = Get-Content $claudeSettingsFile -Raw | ConvertFrom-Json
+          if (-not $claudeSettings.hooks.SessionStart -or -not $claudeSettings.hooks.SessionEnd) { throw 'Claude CrewDispatch lifecycle hooks missing' }
           if (-not (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrewDispatch')) { throw 'Installed Apps registration missing' }
           $uninstaller = Join-Path $target 'Uninstall.exe'
           if (-not (Test-Path $uninstaller)) { throw 'uninstaller missing' }
@@ -74,12 +90,23 @@ jobs:
           if (Test-Path (Join-Path $target '.jobquay-install.json')) { throw 'managed install marker survived uninstall' }
           if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrewDispatch') { throw 'Installed Apps registration survived uninstall' }
           if (Test-Path $target) { throw 'fresh install target survived uninstall' }
+          foreach ($file in @($codexPrompt, $codexManifest, $claudeCommand, $claudeSkill, $claudeManifest)) {
+            if (Test-Path $file) { throw "caller integration survived uninstall: $file" }
+          }
+          if (Test-Path $claudeConfig) {
+            $claudeJsonAfter = Get-Content $claudeConfig -Raw | ConvertFrom-Json
+            if ($claudeJsonAfter.mcpServers.crewdispatch) { throw 'Claude CrewDispatch MCP registration survived uninstall' }
+            if (Test-Path $claudeSettingsFile) {
+              $claudeSettingsAfter = Get-Content $claudeSettingsFile -Raw | ConvertFrom-Json
+              if ($claudeSettingsAfter.hooks.SessionStart -or $claudeSettingsAfter.hooks.SessionEnd) { throw 'Claude CrewDispatch lifecycle hooks survived uninstall' }
+            }
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: CrewDispatch-0.1.2-windows-installer-ci
+          name: CrewDispatch-0.1.3-windows-installer-ci
           path: |
-            installer-out/CrewDispatch-Setup-0.1.2.exe
+            installer-out/CrewDispatch-Setup-0.1.3.exe
             installer-out/windows-installer.json
             installer-out/windows-welcome.png
             installer-out/candidate/*.zip
@@ -127,7 +154,7 @@ jobs:
           cp "$CANDIDATE"/* candidate-out/
       - uses: actions/upload-artifact@v4
         with:
-          name: CrewDispatch-0.1.2-macos-payload-${{ matrix.artifact_arch }}
+          name: CrewDispatch-0.1.3-macos-payload-${{ matrix.artifact_arch }}
           path: |
             candidate-out/*.zip
             candidate-out/*.json
@@ -143,29 +170,29 @@ jobs:
           node-version: '22.23.3'
       - uses: actions/download-artifact@v4
         with:
-          pattern: CrewDispatch-0.1.2-macos-payload-*
+          pattern: CrewDispatch-0.1.3-macos-payload-*
           path: candidates
           merge-multiple: true
       - name: Build dual-architecture package
         shell: bash
         run: |
           set -euo pipefail
-          ARM="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.2-darwin-arm64-*.zip' -print -quit)"
-          X64="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.2-darwin-x64-*.zip' -print -quit)"
+          ARM="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.3-darwin-arm64-*.zip' -print -quit)"
+          X64="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.3-darwin-x64-*.zip' -print -quit)"
           test -n "$ARM"
           test -n "$X64"
           mkdir -p installer-out
-          node scripts/build-macos-installer.cjs --arm64-archive "$ARM" --x64-archive "$X64" --output installer-out/CrewDispatch-0.1.2.pkg | tee installer-out/macos-installer.json
+          node scripts/build-macos-installer.cjs --arm64-archive "$ARM" --x64-archive "$X64" --output installer-out/CrewDispatch-0.1.3.pkg | tee installer-out/macos-installer.json
           /bin/zsh -n installers/macos/postinstall
-          pkgutil --expand installer-out/CrewDispatch-0.1.2.pkg installer-out/expanded
+          pkgutil --expand installer-out/CrewDispatch-0.1.3.pkg installer-out/expanded
           test -f installer-out/expanded/Scripts/postinstall
           test -f installer-out/expanded/Scripts/payload-arm64.zip
           test -f installer-out/expanded/Scripts/payload-x86_64.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: CrewDispatch-0.1.2-macos-installer-ci
+          name: CrewDispatch-0.1.3-macos-installer-ci
           path: |
-            installer-out/CrewDispatch-0.1.2.pkg
+            installer-out/CrewDispatch-0.1.3.pkg
             installer-out/macos-installer.json
 
   macos-installer-lifecycle:
@@ -185,7 +212,7 @@ jobs:
           node-version: '22.23.3'
       - uses: actions/download-artifact@v4
         with:
-          name: CrewDispatch-0.1.2-macos-installer-ci
+          name: CrewDispatch-0.1.3-macos-installer-ci
           path: installer-out
       - name: Install and completely uninstall the exact package
         shell: bash
@@ -198,13 +225,22 @@ jobs:
           sudo chown "$USER:$(id -gn)" /dev/console
           restore_console() { sudo chown "$ORIGINAL_CONSOLE_OWNER" /dev/console || true; }
           trap restore_console EXIT
-          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.2.pkg -target /; then
+          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.3.pkg -target /; then
             sudo tail -n 200 /var/log/install.log || true
             exit 1
           fi
           TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
           test -f "$TARGET/.jobquay-install.json"
-          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.2'
+          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.3'
+          test -f "$HOME/.codex/prompts/crewdispatch.md"
+          test -f "$HOME/.codex/crewdispatch-install.json"
+          test -f "$HOME/.claude/commands/crewdispatch.md"
+          test -f "$HOME/.claude/skills/crewdispatch/SKILL.md"
+          test -f "$HOME/.claude/crewdispatch-install.json"
+          test -f "$HOME/.claude.json"
+          node -e 'const c=require(process.argv[1]); if (!c.mcpServers || !c.mcpServers.crewdispatch) process.exit(1)' "$HOME/.claude.json"
+          test -f "$HOME/.claude/settings.json"
+          node -e 'const c=require(process.argv[1]); if (!c.hooks || !c.hooks.SessionStart || !c.hooks.SessionEnd) process.exit(1)' "$HOME/.claude/settings.json"
           test -x "$HOME/Applications/CrewDispatch Dashboard.command"
           test -x "$HOME/Applications/CrewDispatch Uninstaller.command"
           case '${{ matrix.expected_uname }}' in
@@ -218,6 +254,17 @@ jobs:
           test ! -e "$HOME/Library/LaunchAgents/com.crewdispatch.dashboard.plist"
           test ! -e "$HOME/Applications/CrewDispatch Dashboard.command"
           test ! -e "$HOME/Applications/CrewDispatch Uninstaller.command"
+          test ! -e "$HOME/.codex/prompts/crewdispatch.md"
+          test ! -e "$HOME/.codex/crewdispatch-install.json"
+          test ! -e "$HOME/.claude/commands/crewdispatch.md"
+          test ! -e "$HOME/.claude/skills/crewdispatch/SKILL.md"
+          test ! -e "$HOME/.claude/crewdispatch-install.json"
+          if [[ -f "$HOME/.claude.json" ]]; then
+            node -e 'const c=require(process.argv[1]); if (c.mcpServers && c.mcpServers.crewdispatch) process.exit(1)' "$HOME/.claude.json"
+            if [[ -f "$HOME/.claude/settings.json" ]]; then
+              node -e 'const c=require(process.argv[1]); if (c.hooks && (c.hooks.SessionStart || c.hooks.SessionEnd)) process.exit(1)' "$HOME/.claude/settings.json"
+            fi
+          fi
           if pkgutil --pkg-info com.crewdispatch.installer >/dev/null 2>&1; then
             echo 'package receipt survived uninstall' >&2
             exit 1

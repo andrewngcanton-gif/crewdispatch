@@ -37,7 +37,7 @@ import { probeHubEndpoint } from "../../dashboard/launcher";
 import { dataRootId } from "../../hub/endpoint";
 import { readDispatchDashboardRecord } from "../../daemon/dashboard-ensure";
 import { shutdownJobDaemon } from "../../daemon/client";
-import { DASHBOARD_FIRST_USE_HINT } from "../../onboarding/dashboard-hint";
+import { dashboardFirstUseHint } from "../../onboarding/dashboard-hint";
 import { McpStdioClient } from "../helpers/mcp-client";
 
 const MCP_ENTRY = path.join(__dirname, "..", "..", "mcp", "server.js");
@@ -183,8 +183,8 @@ test("the first accepted dispatch quietly starts the REAL Hub; independent calle
     assert.match(jobId, /^job-/);
     // The one-time first-use hint is surfaced, worded for the new
     // behavior, and NO readiness is claimed (startup is only scheduled).
-    assert.equal(spawned.dashboard_hint, DASHBOARD_FIRST_USE_HINT);
-    assert.equal(String(spawned.dashboard_hint).includes("no browser is opened"), true);
+    assert.equal(spawned.dashboard_hint, dashboardFirstUseHint(`http://127.0.0.1:${ws.hubPort}/ui`));
+    assert.equal(String(spawned.dashboard_hint).includes("may still be starting"), true);
     const spawnedText = JSON.stringify(spawned);
     assert.equal(spawnedText.includes("dashboard_ready"), false, "a scheduled startup must not claim readiness");
     assert.ok(elapsed < 8000, `dispatch acceptance stays bounded (${elapsed}ms)`);

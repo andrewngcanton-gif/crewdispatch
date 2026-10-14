@@ -215,8 +215,16 @@ test("real install CLI installs an independent package, diagnoses both servers, 
   fs.writeFileSync(outsideSentinel, "outside target\n", "utf8");
   fs.writeFileSync(userConfigSentinel, "user configuration remains untouched\n", "utf8");
   fs.writeFileSync(dataSentinel, "separate data root\n", "utf8");
+  const callerHome = path.join(workspace, "caller-home");
+  const codexHome = path.join(callerHome, ".codex");
+  const claudeConfig = path.join(callerHome, ".claude");
+  fs.mkdirSync(callerHome, { recursive: true });
   const installerEnv: NodeJS.ProcessEnv = {
     ...process.env,
+    HOME: callerHome,
+    USERPROFILE: callerHome,
+    CODEX_HOME: codexHome,
+    CLAUDE_CONFIG_DIR: claudeConfig,
     JOBQUAY_DATA_ROOT: dataRoot,
     JOBQUAY_TEST_AUTOSTART_REGISTRY: autostartRegistry,
     JOBQUAY_TEST_LAUNCHAGENT_DIR: launchAgentDir,
@@ -233,16 +241,16 @@ test("real install CLI installs an independent package, diagnoses both servers, 
   try {
   // This attempt checks the string-only protected-path guard. The installer rejects
   // the legacy path before lstat, enumeration, or file access; its contents are never read.
-  const oldSelfUsePath = path.join(os.homedir(), ".workbuddy", "plugins", "wb-crew");
+  const oldSelfUsePath = path.join(callerHome, ".workbuddy", "plugins", "wb-crew");
   const oldPathAttempt = runInstaller(SOURCE_INSTALLER, ["install", "--target", oldSelfUsePath], foreignCwd, installerEnv);
   assert.notEqual(oldPathAttempt.status, 0);
   assert.equal(((oldPathAttempt.json.error as Record<string, unknown>)?.code), "protected_target");
   if (process.platform === "darwin") {
     for (const protectedTarget of [
-      path.join(os.homedir(), ".claude", "crewdispatch-install"),
-      path.join(os.homedir(), "Library", "Application Support", "Claude", "crewdispatch-install"),
-      path.join(os.homedir(), "Library", "Application Support", "Claude-3p", "crewdispatch-install"),
-      path.join(os.homedir(), "Library", "LaunchAgents", "crewdispatch-install"),
+      path.join(callerHome, ".claude", "crewdispatch-install"),
+      path.join(callerHome, "Library", "Application Support", "Claude", "crewdispatch-install"),
+      path.join(callerHome, "Library", "Application Support", "Claude-3p", "crewdispatch-install"),
+      path.join(callerHome, "Library", "LaunchAgents", "crewdispatch-install"),
       path.join("/Applications", "CrewDispatch-internal-test"),
       path.join("/System", "CrewDispatch-internal-test")
     ]) {
@@ -292,6 +300,20 @@ test("real install CLI installs an independent package, diagnoses both servers, 
     assert.ok(fs.existsSync(path.join(target, "dist", "cli", "install-cli.js")));
     assert.equal(fs.existsSync(path.join(target, "src")), false, "installed runtime must not depend on the checkout source tree");
     assert.equal(fs.existsSync(path.join(target, "dist", "tests")), false, "test sources must not be copied into the install");
+    const callers = installed.json.callers as Record<string, Record<string, unknown>>;
+    assert.ok(callers.codex, "standard install reports Codex caller integration");
+    assert.ok(callers.claude, "standard install reports Claude caller integration");
+    assert.equal(callers.claude.ok, true, JSON.stringify(callers.claude));
+    assert.equal(fs.existsSync(path.join(codexHome, "prompts", "crewdispatch.md")), true, "standard install registers the Codex composer prompt");
+    assert.equal(fs.existsSync(path.join(target, ".agents", "plugins", "marketplace.json")), true, "installed runtime carries the local Codex marketplace");
+    assert.equal(fs.existsSync(path.join(claudeConfig, "commands", "crewdispatch.md")), true, "standard install registers the Claude command");
+    assert.equal(fs.existsSync(path.join(claudeConfig, "skills", "crewdispatch", "SKILL.md")), true, "standard install registers the Claude skill");
+    assert.equal(fs.existsSync(path.join(claudeConfig, "crewdispatch-install.json")), true, "standard install records Claude caller ownership");
+    const claudeSettings = JSON.parse(fs.readFileSync(path.join(claudeConfig, "settings.json"), "utf8")) as { hooks?: { SessionStart?: unknown[]; SessionEnd?: unknown[] } };
+    assert.ok(Array.isArray(claudeSettings.hooks?.SessionStart) && claudeSettings.hooks!.SessionStart!.length > 0, "standard install registers the Claude SessionStart hook");
+    assert.ok(Array.isArray(claudeSettings.hooks?.SessionEnd) && claudeSettings.hooks!.SessionEnd!.length > 0, "standard install registers the Claude SessionEnd hook");
+    const claudeUserConfig = JSON.parse(fs.readFileSync(path.join(claudeConfig, ".claude.json"), "utf8")) as { mcpServers?: Record<string, unknown> };
+    assert.ok(claudeUserConfig.mcpServers?.crewdispatch, "standard install registers the Claude CrewDispatch MCP server");
 
     // The reviewed third-party notice bundle must ship verbatim, be tracked by the
     // install marker, and be reported by the install result instead of a TODO.
@@ -316,6 +338,10 @@ test("real install CLI installs an independent package, diagnoses both servers, 
     const installMarkerData = JSON.parse(fs.readFileSync(path.join(target, ".jobquay-install.json"), "utf8")) as {
       managedFiles: { path: string; sha256: string; mode?: number }[];
     };
+    assert.ok(
+      installMarkerData.managedFiles.some((file) => file.path === ".agents/plugins/marketplace.json"),
+      "the local Codex marketplace is installer-owned"
+    );
     const noticeEntry = installMarkerData.managedFiles.find((file) => file.path === "THIRD_PARTY_NOTICES");
     assert.ok(noticeEntry, "the install marker must manage THIRD_PARTY_NOTICES");
     assert.equal(noticeEntry.sha256, sourceNoticeSha, "the marker must record the shipped notice hash");

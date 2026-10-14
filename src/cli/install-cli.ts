@@ -6,6 +6,7 @@ import path from "node:path";
 import { InstallError, inspectManagedTarget, install, purgeDataRoot, uninstall, upgrade } from "../install/manager";
 import { resolveDataRoot } from "../jobs/store";
 import { REQUIRED_NODE_MAJOR } from "../install/node-runtime";
+import { installCodexClient, uninstallCodexClient } from "../codex/client-install";
 
 type Command =
   | "install"
@@ -123,6 +124,7 @@ function help(command: Command | null): void {
       "install accepts only a directory that does not yet exist; upgrade, uninstall, and complete-uninstall accept only a directory that carries the CrewDispatch install marker.",
       "complete-uninstall also removes unmodified Codex/Claude caller integration. Add --purge-data to remove the dedicated JobQuay/CrewDispatch data root after safety validation; edited or foreign caller files are preserved and reported.",
       "install/upgrade registers (and refreshes) the Dashboard login autostart for the current Windows user; uninstall removes only the CrewDispatch entry that points at this installation. A registration failure is reported as a downgrade and does not block the install commit.",
+      "install/upgrade also configures the user-level Codex and Claude caller integrations. Caller conflicts/unavailability are reported separately and never roll back a healthy core runtime; complete-uninstall removes only caller state CrewDispatch can prove it owns.",
       "doctor outputs JSON and checks supported local CLI metadata without sending a model prompt.",
       "claude-install/claude-reinstall install or refresh the user-level Claude Code caller integration (MCP registration, dispatch skill, compact command, SessionStart/SessionEnd binding hooks). Without --config they use the official default locations (~/.claude and ~/.claude.json); --config <dir> (or CLAUDE_CONFIG_DIR) selects an explicit configuration directory.",
       "claude-uninstall removes only entries and files recorded as managed by a previous claude-install; edited or foreign entries are preserved.",
@@ -132,16 +134,12 @@ function help(command: Command | null): void {
 }
 
 function cleanupCodexCaller(target: string): Record<string, unknown> {
-  const script = path.join(target, "scripts", "uninstall-codex-command.cjs");
-  if (!fs.existsSync(script)) return { ok: true, status: "already_absent" };
-  const run = spawnSync(process.execPath, [script], { encoding: "utf8", windowsHide: true, timeout: 30000 });
-  const stdout = String(run.stdout || "").trim();
-  const stderr = String(run.stderr || "").trim();
-  if (run.error) return { ok: false, status: "error", error: run.error.message, stdout, stderr };
-  if (run.status === 0) return { ok: true, status: "removed_or_absent", stdout };
-  // The Codex cleanup intentionally exits non-zero when a user-edited prompt is
-  // preserved. Complete uninstall reports that conflict but continues safely.
-  return { ok: false, status: "preserved_or_error", exitCode: run.status, stdout, stderr };
+  try {
+    const result = uninstallCodexClient(target);
+    return { ...result, status: result.ok ? "removed_or_absent" : "preserved_or_error" } as unknown as Record<string, unknown>;
+  } catch (e) {
+    return { ok: false, status: "error", error: String((e as Error)?.message || e) };
+  }
 }
 
 function cleanupClaudeCaller(): Record<string, unknown> {
@@ -209,8 +207,21 @@ async function main(): Promise<number> {
   }
 
   try {
-    if (parsed.command === "install") print(install(parsed.target));
-    else if (parsed.command === "upgrade") print(upgrade(parsed.target));
+    if (parsed.command === "install" || parsed.command === "upgrade") {
+      const core = parsed.command === "install" ? install(parsed.target) : upgrade(parsed.target);
+      const codex = installCodexClient(parsed.target);
+      let claude: Record<string, unknown>;
+      try {
+        claude = installClaudeClient({ sourceRoot: parsed.target }) as unknown as Record<string, unknown>;
+      } catch (e) {
+        claude = { ok: false, command: "claude-install", error: String((e as Error)?.message || e) };
+      }
+      const callerWarnings = [
+        ...(codex.ok ? [] : ["Codex caller integration was not fully installed; run doctor after installing/updating Codex."]),
+        ...(claude.ok === true ? [] : ["Claude caller integration was not fully installed; existing user configuration may have been preserved."])
+      ];
+      print({ ...core, callers: { codex, claude }, callerWarnings });
+    }
     else if (parsed.command === "uninstall") print(uninstall(parsed.target));
     else if (parsed.command === "complete-uninstall") {
       const managed = inspectManagedTarget(parsed.target);

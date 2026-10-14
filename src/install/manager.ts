@@ -388,6 +388,22 @@ function copyPayload(sourceRoot: string, target: string, finalTarget: string, no
   copyRegularFile(codexPrompt, path.join(target, "integrations", "codex", "prompts", "crewdispatch.md"));
   copyRegularFile(codexInstallCommand, path.join(target, "scripts", "install-codex-command.cjs"));
   copyRegularFile(codexUninstallCommand, path.join(target, "scripts", "uninstall-codex-command.cjs"));
+  const marketplaceDir = path.join(target, ".agents", "plugins");
+  fs.mkdirSync(marketplaceDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(marketplaceDir, "marketplace.json"),
+    `${JSON.stringify({
+      name: "crewdispatch-local",
+      interface: { displayName: "CrewDispatch Local" },
+      plugins: [{
+        name: "crewdispatch",
+        source: { source: "local", path: "./plugins/crewdispatch" },
+        policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" },
+        category: "Productivity"
+      }]
+    }, null, 2)}\n`,
+    { encoding: "utf8", flag: "wx" }
+  );
   renderMcpConfig(target, finalTarget, nodePath);
 }
 

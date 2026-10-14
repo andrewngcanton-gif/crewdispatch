@@ -16,7 +16,7 @@ import {
 import { continueJobViaDaemon, JobDaemonError, startJobViaDaemon } from "../daemon/client";
 import { reconcileAll } from "../jobs/reconcile";
 import { JobStoreError, listJobs, readNotificationResult, resolveDataRoot, withMergedNotifications, writeTerminalReadReceipt } from "../jobs/store";
-import { isTerminalStatus, type JobRecord } from "../jobs/types";
+import { isTerminalStatus, type JobRecord, type NotifyTarget } from "../jobs/types";
 import { ConfigError, configPatchFromSnake, configView, updateConfig } from "../config/schema";
 import { readSettings } from "../config/settings";
 import type { CallToolResult } from "@modelcontextprotocol/server";
@@ -24,6 +24,7 @@ import type { DeliveryDeps } from "./notify";
 import { NotifyInputError, deliverTerminalNotification, resolveNotifyTarget } from "./notify";
 import { compactJob, compactResult, compactSummary, isDowngraded, MCP_MAX_LIST } from "./view";
 import { claimDashboardFirstUseHint } from "../onboarding/dashboard-hint";
+import { resolveDashboardPort } from "../dashboard/launcher";
 
 /** MCP-shaped tool result — the official SDK's own result type. */
 export type ToolResult = CallToolResult;
@@ -125,6 +126,16 @@ function isToolResult(v: unknown): v is ToolResult {
 
 function root(deps: ToolDeps): string {
   return resolveDataRoot(deps.root, deps.env ?? process.env);
+}
+
+function dashboardSessionKey(target: NotifyTarget): string | null {
+  if (target.kind === "codex_thread" && target.codexThreadId) return `codex:${target.codexThreadId}`;
+  if (target.kind === "claude_session") {
+    if (target.claudeSessionId) return `claude-session:${target.claudeSessionId}`;
+    if (target.claudeBindingId) return `claude-binding:${target.claudeBindingId}`;
+  }
+  if (target.kind === "callback" && target.callbackUrl) return `callback:${target.callbackUrl}`;
+  return null;
 }
 
 /**
@@ -238,7 +249,12 @@ async function spawnInternal(args: unknown, deps: ToolDeps): Promise<SpawnOutcom
       env: deps.env,
       notifyTarget: target
     });
-    const dashboardHint = claimDashboardFirstUseHint(rootDir);
+    const dashboardPort = resolveDashboardPort({ env: deps.env ?? process.env });
+    const dashboardHint = claimDashboardFirstUseHint(
+      rootDir,
+      dashboardSessionKey(target),
+      `http://127.0.0.1:${dashboardPort}/ui`
+    );
     return {
       result: toolJson({
         ok: true,

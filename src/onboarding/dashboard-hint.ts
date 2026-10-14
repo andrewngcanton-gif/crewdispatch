@@ -1,34 +1,28 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { assertInside, ensureRoot } from "../jobs/store";
 
-/**
- * One-time first-use hint, claimed by the MCP layer on the first
- * dispatch for a data root. This describes an ATTEMPT made off the
- * response path: it must never promise that the Dashboard is running
- * or will succeed — startup is fire-and-forget, may be disabled, and
- * any failure is recorded in the bounded local diagnostic rather than
- * claimed in the dispatch response.
- */
-export const DASHBOARD_FIRST_USE_HINT = "CrewDispatch is attempting to start the Dashboard quietly in the background with this dispatch; no browser is opened and it may not be ready yet.\nTo open it manually, run: `crewdispatch web`";
+export function dashboardFirstUseHint(url: string): string {
+  return `CrewDispatch Dashboard: ${url} — it may still be starting.\nOpen it anytime with \`crewdispatch web\`.`;
+}
 
-export function dashboardHintMarkerPath(root: string): string {
-  const file = path.join(root, "onboarding", "dashboard-hint-v1.shown");
+export function dashboardHintMarkerPath(root: string, sessionKey: string): string {
+  const digest = crypto.createHash("sha256").update(sessionKey, "utf8").digest("hex");
+  const file = path.join(root, "onboarding", "dashboard-hint-v2", `${digest}.shown`);
   assertInside(root, file);
   return file;
 }
 
 /**
- * Claim the one-time Dashboard onboarding hint for this CrewDispatch data root.
- *
- * The marker uses an exclusive create so concurrent first dispatches cannot both
- * claim the hint. Hint persistence is best-effort and must never make an accepted
- * job fail.
+ * Claim the Dashboard onboarding hint once per caller conversation. The raw
+ * caller/session id is never written to disk: only a SHA-256-derived marker
+ * filename is persisted. Unknown/unbound callers share one fallback key.
  */
-export function claimDashboardFirstUseHint(root: string): string | null {
+export function claimDashboardFirstUseHint(root: string, sessionKey: string | null, url: string): string | null {
   try {
     ensureRoot(root);
-    const file = dashboardHintMarkerPath(root);
+    const file = dashboardHintMarkerPath(root, sessionKey || "unbound");
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const fd = fs.openSync(file, "wx");
     try {
@@ -37,7 +31,7 @@ export function claimDashboardFirstUseHint(root: string): string | null {
     } finally {
       fs.closeSync(fd);
     }
-    return DASHBOARD_FIRST_USE_HINT;
+    return dashboardFirstUseHint(url);
   } catch (error) {
     if ((error as NodeJS.ErrnoException)?.code === "EEXIST") return null;
     return null;

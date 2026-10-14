@@ -4,43 +4,28 @@ CrewDispatch can be used from MCP-capable callers. Caller integration is separat
 
 ## Codex
 
-The release carries an optional thin composer prompt. Install it with:
+The normal Windows/macOS installer automatically registers the CrewDispatch local Codex plugin and the composer prompt. After installation, fully restart Codex/ChatGPT Desktop, then use:
+
+```text
+/prompts:crewdispatch
+```
+
+The plugin carries the CrewDispatch MCP server and `crewdispatch` dispatch skill. The prompt installer is conservative: an unrelated or user-modified prompt is never overwritten. Advanced/manual repair can re-register the prompt from the installed runtime with:
 
 ```text
 node <target>/scripts/install-codex-command.cjs
 ```
 
-Reload Codex, then select `/prompts:crewdispatch`. The installer is conservative: an unrelated or user-modified prompt is not overwritten.
-
-Remove the CrewDispatch-owned prompt with:
-
-```text
-node <target>/scripts/uninstall-codex-command.cjs
-```
-
-The uninstaller removes only the known CrewDispatch-owned prompt content and preserves user modifications.
-
-The canonical plugin/skill payload is under:
-
-```text
-<target>/plugins/crewdispatch/
-```
-
+Complete uninstall removes the CrewDispatch-owned plugin/marketplace registration and untouched prompt. Edited or foreign entries are preserved and reported.
 ## Claude
 
-Install the user-level Claude integration from the installed CrewDispatch runtime:
+The normal Windows/macOS installer automatically installs the user-level Claude caller integration: MCP registration, SessionStart/SessionEnd binding hooks, the `crewdispatch` skill, and `/crewdispatch` command. Start a new Claude session after installation.
+
+Advanced/manual repair from the installed runtime remains available:
 
 ```text
 node <target>/dist/cli/install-cli.js claude-install
 node <target>/dist/cli/install-cli.js claude-doctor
 ```
 
-It manages only CrewDispatch-owned MCP/hook/skill/command entries. Unrelated Claude configuration is preserved.
-
-Remove it with:
-
-```text
-node <target>/dist/cli/install-cli.js claude-uninstall
-```
-
-Edited managed entries are preserved and reported instead of being force-deleted.
+Complete uninstall removes only CrewDispatch-owned MCP/hook/skill/command entries. Edited or foreign entries are preserved and reported.
