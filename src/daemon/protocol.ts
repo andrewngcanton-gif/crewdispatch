@@ -1,4 +1,5 @@
 import type { JobRecord, NotifyTarget, RunnerKind } from "../jobs/types";
+import type { UserMessageSource } from "../jobs/messages";
 
 export const DAEMON_PROTOCOL_VERSION = 1;
 export const DAEMON_META_VERSION = 1;
@@ -41,6 +42,8 @@ export interface DaemonContinuePayload {
   workerScript?: string;
   env?: NodeJS.ProcessEnv;
   notifyTarget?: NotifyTarget;
+  /** Local conversation provenance only; never sent to the provider. */
+  messageSource?: UserMessageSource;
 }
 
 /**

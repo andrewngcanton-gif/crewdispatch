@@ -9,13 +9,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { assertInside, atomicWriteFile, safeId } from "./store";
 
+export type UserMessageSource = "codex" | "claude" | "dashboard" | "callback" | "unknown";
+
 /** One user message in a job's conversation (Hub session view). */
 export interface UserMessage {
   text: string;
   generation: number;
   at: string;
+  /** Local UI provenance only; never included in the provider prompt. */
+  source?: UserMessageSource;
 }
-
 export interface UserMessageHistory {
   /** True when a valid side-car exists. A valid but incomplete history is possible. */
   available: boolean;
@@ -54,12 +57,18 @@ export function assistantMessagePath(root: string, id: string): string {
   return path.join(messageDir(root), `${safeId(id)}.assistant.json`);
 }
 
+function isUserMessageSource(value: unknown): value is UserMessageSource {
+  return value === "codex" || value === "claude" || value === "dashboard" || value === "callback" || value === "unknown";
+}
+
 function isUserMessage(v: unknown): v is UserMessage {
   if (!v || typeof v !== "object") return false;
   const m = v as Record<string, unknown>;
-  return typeof m.text === "string" && Number.isInteger(m.generation) && (m.generation as number) >= 0 && typeof m.at === "string";
+  return typeof m.text === "string" &&
+    Number.isInteger(m.generation) && (m.generation as number) >= 0 &&
+    typeof m.at === "string" &&
+    (m.source === undefined || isUserMessageSource(m.source));
 }
-
 function isAssistantMessage(v: unknown): v is AssistantMessage {
   return isUserMessage(v);
 }

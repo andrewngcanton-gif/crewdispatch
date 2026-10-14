@@ -542,6 +542,48 @@ test("an already-open Hub Jobs page shows a newly created session within one pol
       `document.querySelector('#jobs button.job[data-job-id=${JSON.stringify(jobId)}] .job-title').textContent`
     );
     assert.equal(sidebarTitle, taskTitle, "the sidebar renders the created session title");
+
+    // Caller provenance is local presentation metadata, not provider prompt text.
+    // A Claude-originated dispatch must never inherit the old hard-coded Codex label.
+    const claudeTaskTitle = "CLAUDE_CALLER_LABEL_MARKER";
+    assert.throws(
+      () => startJob({
+        root,
+        cwd: project,
+        task: claudeTaskTitle,
+        provider: "command-code",
+        workerScript: missingWorker,
+        env: process.env,
+        notifyTarget: {
+          kind: "claude_session",
+          callbackUrl: null,
+          codexThreadId: null,
+          claudeSessionId: "claude-ui-session",
+          claudeBindingId: null,
+          source: "claude_session_id"
+        }
+      }),
+      (error: any) => error?.code === "worker_missing"
+    );
+    const claudeJob = listJobs(root).jobs.find((job) => job.task === claudeTaskTitle);
+    assert.ok(claudeJob, "the Claude-originated fixture job was persisted");
+    await waitForPage(
+      page.evaluate,
+      () => `Array.from(document.querySelectorAll("#jobs button.job")).some((b) => b.dataset.jobId === ${JSON.stringify(claudeJob!.id)})`,
+      8000,
+      "Claude-originated session in the sidebar"
+    );
+    await page.evaluate(`document.querySelector('#jobs button.job[data-job-id=${JSON.stringify(claudeJob!.id)}]').click()`);
+    await waitForPage(
+      page.evaluate,
+      () => `(document.getElementById("conversation").textContent || "").includes(${JSON.stringify(claudeTaskTitle)})`,
+      15000,
+      "Claude-originated conversation"
+    );
+    const claudeWho = await page.evaluate(`document.querySelector("#conversation .bubble.user .who")?.textContent || ""`);
+    assert.equal(claudeWho, "You / Claude · first task", "Claude dispatches are labelled Claude, never Codex");
+    const claudeDetail = await fetch(`${hubUrl}/api/jobs/${claudeJob!.id}`).then((response) => response.json()) as any;
+    assert.equal(claudeDetail.user_messages[0].source, "claude", "Hub exposes bounded local caller provenance for the first message");
     console.log(
       `[hub-ui-browser] EV1 sidebar: job ${jobId} appeared ${elapsedMs}ms after creation ` +
         `(poll cycle ${POLL_CYCLE_MS}ms), page reloaded = false, title=${JSON.stringify(sidebarTitle)}`

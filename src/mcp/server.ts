@@ -33,7 +33,7 @@ import {
 } from "./tools";
 
 export const SERVER_NAME = "crewdispatch";
-export const SERVER_VERSION = "0.1.3";
+export const SERVER_VERSION = "0.1.4";
 
 const THREAD_ID_DESC =
   "Codex thread id to wake on completion. Read your own $CODEX_THREAD_ID ONCE in a local no-LLM shell and pass it here: a long-running MCP server does not reliably inherit it, and a client disconnect must not lose the wake. Must be a valid Codex session UUID or session name. Wake priority is callback_url > Claude session/binding > codex_thread_id > CODEX_THREAD_ID env fallback.";

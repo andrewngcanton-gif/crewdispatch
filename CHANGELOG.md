@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.4 — in validation
+
+Caller-label UI patch release.
+
+- Claude-originated tasks now display `You / Claude` instead of the previously hard-coded `You / Codex` label.
+- Local conversation metadata records the caller source for accurate Codex / Claude / Dashboard / callback labels; provider task text is unchanged.
+- Empty-state copy now refers to the provider-neutral CrewDispatch MCP.
+
+
 ## 0.1.3 — 2026-10-14
 
 Caller-integration and onboarding patch release.

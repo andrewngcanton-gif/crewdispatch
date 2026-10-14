@@ -14,8 +14,8 @@ CrewDispatch does not modify the global `PATH`, does not install provider accoun
 
 The latest GitHub Release provides normal installers:
 
-- `CrewDispatch-Setup-0.1.3.exe` — Windows x64, per-user installer.
-- `CrewDispatch-0.1.3.pkg` — macOS installer for Apple Silicon and Intel.
+- `CrewDispatch-Setup-0.1.4.exe` — Windows x64, per-user installer.
+- `CrewDispatch-0.1.4.pkg` — macOS installer for Apple Silicon and Intel.
 
 GitHub also provides source-code archives automatically. The 0.1.0 manual ZIPs remain available on the historical 0.1.0 release.
 

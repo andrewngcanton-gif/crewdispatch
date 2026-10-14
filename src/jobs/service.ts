@@ -106,7 +106,8 @@ import {
   appendUserMessageOrThrow,
   loadUserMessagesInfo,
   removeUserMessages,
-  writeUserMessagesInfo
+  writeUserMessagesInfo,
+  type UserMessageSource
 } from "./messages";
 import {
   COMMAND_CODE_PROVIDER,
@@ -232,6 +233,15 @@ function defaultWorkerScript(): string {
 // ---------------------------------------------------------------------------
 // Record creation
 // ---------------------------------------------------------------------------
+
+function userMessageSourceForNotifyTarget(target: NotifyTarget): UserMessageSource {
+  switch (target.kind) {
+    case "codex_thread": return "codex";
+    case "claude_session": return "claude";
+    case "callback": return "callback";
+    default: return "unknown";
+  }
+}
 
 export interface NewJobInput {
   task: string;
@@ -539,7 +549,12 @@ export function startJob(input: StartJobInput): StartJobResult {
     // The original user message must be durable before the queued record makes the
     // generation visible. If side-car persistence fails, no job is accepted.
     try {
-      appendUserMessageOrThrow(root, job.id, { text: job.task, generation: 0, at: job.createdAt });
+      appendUserMessageOrThrow(root, job.id, {
+        text: job.task,
+        generation: 0,
+        at: job.createdAt,
+        source: userMessageSourceForNotifyTarget(job.notifyTarget)
+      });
     } catch (e) {
       throw new JobServiceError("message_history_write_failed", `Failed to persist the job message history: ${String((e as Error)?.message || e)}`);
     }
@@ -3383,6 +3398,8 @@ export interface ContinuationInput {
    * target is kept (the continuation stays on the same logical job/wake target).
    */
   notifyTarget?: NotifyTarget;
+  /** Local UI provenance for this follow-up; provider input remains task-only. */
+  messageSource?: UserMessageSource;
 }
 
 export type ContinuationResult =
@@ -3552,7 +3569,12 @@ export async function prepareContinuation(input: ContinuationInput): Promise<Con
     };
 
     try {
-      appendUserMessageOrThrow(resolved, job.id, { text: followUpMessage, generation: next.generation, at });
+      appendUserMessageOrThrow(resolved, job.id, {
+        text: followUpMessage,
+        generation: next.generation,
+        at,
+        source: input.messageSource ?? userMessageSourceForNotifyTarget(next.notifyTarget)
+      });
     } catch (e) {
       return {
         ok: false,

@@ -334,6 +334,7 @@ test("Hub observes MCP-created job: first message, terminal, pagination, increme
     assert.equal(after.follow_ups.length, 1, "hub shows the follow-up message");
     assert.equal(after.follow_ups[0].text, "FOLLOWUP_MARKER_hub");
     assert.equal(after.follow_ups[0].generation, 1);
+    assert.equal(after.user_messages[1].source, "dashboard", "a Hub composer follow-up is labelled as Dashboard provenance only in local UI metadata");
     assert.equal(after.task, "TASK_MARKER_hub_flow — must appear as the original task", "original task preserved across follow-up");
     assert.equal(after.history_available, true);
     assert.deepEqual(after.assistant_messages.map((m: any) => [m.generation, m.text]), [[0, "DONE-MARKER"], [1, "DONE-MARKER"]], "hub keeps both assistant replies across a follow-up");
@@ -1120,10 +1121,10 @@ test("built Hub serves its browser UI with a strict script boundary and no task 
     // served HTML would be an untranslated, user-visible string.
     assert.doesNotMatch(html, /[\u4e00-\u9fff]/);
     // No task-creation control exists anywhere in the shell. The page only says
-    // that new tasks are dispatched from the Codex MCP; no button/link/form may
+    // that new tasks are dispatched through the CrewDispatch MCP; no button/link/form may
     // offer creating or starting a task.
     assert.doesNotMatch(html, /id="newTask"/);
-    assert.match(html, /New tasks are dispatched from the Codex MCP/);
+    assert.match(html, /New tasks are dispatched through the CrewDispatch MCP/);
     assert.match(html, /Cascadia Mono/);
     assert.match(html, /id="jobEffort"/);
     assert.match(html, /id="jobFallback"/);

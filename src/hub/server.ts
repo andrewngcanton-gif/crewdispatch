@@ -466,7 +466,7 @@ function hubJobDetail(root: string, job: ReturnType<typeof loadJob>): Record<str
     history_available: history.complete,
     history_reason: history.complete ? null : history.reason ?? "original_message_missing",
     follow_ups: followUps,
-    user_messages: messages.map((m) => ({ generation: m.generation, text: m.text, at: m.at })),
+    user_messages: messages.map((m) => ({ generation: m.generation, text: m.text, at: m.at, source: m.source ?? null })),
     assistant_messages: assistantHistory.messages.map((m) => ({ generation: m.generation, text: m.text, at: m.at })),
     usage: job.usage,
     result,
@@ -1054,7 +1054,8 @@ export function createHubHandler(
             task: message,
             fixturePath: effectiveFixture,
             cliPath: effectiveCli,
-            env: { ...env, CREWDISPATCH_DATA_ROOT: root, JOBQUAY_DATA_ROOT: root }
+            env: { ...env, CREWDISPATCH_DATA_ROOT: root, JOBQUAY_DATA_ROOT: root },
+            messageSource: "dashboard"
           });
           sendJson(res, 200, {
             ok: true,

@@ -38,7 +38,7 @@ type JobDetail = JobSummary & {
   task: string | null;
   history_available: boolean;
   history_reason: string | null;
-  user_messages: Array<{ generation: number; text: string; at: string }>;
+  user_messages: Array<{ generation: number; text: string; at: string; source?: string | null }>;
   assistant_messages: Array<{ generation: number; text: string; at: string }>;
   assistant_content: string | null;
   assistant_missing: boolean;
@@ -59,6 +59,7 @@ type JobDetail = JobSummary & {
   attempts?: Array<{ generation: number; model: string | null; model_source: string | null; effort?: string | null; exit_code: number | null; kind: string | null; rate_limited?: boolean }>;
   /** The bounded pending provider approval of a running turn, or null. */
   pending_approval?: PendingApprovalView | null;
+  notify?: { kind?: string | null; source?: string | null };
 };
 type LogEntry = { offset?: number; data?: Json; reasoning?: unknown[]; error?: string; unparsed?: boolean };
 type LogBatch = { entries: LogEntry[]; cursor: string; drained: boolean; pending: boolean; cursor_error?: string };
@@ -610,7 +611,7 @@ function renderPendingApprovals(): void {
 function renderJobs(): void {
   renderPendingApprovals();
   empty(ui.jobs);
-  if (!state.jobs.length) message(ui.jobs, "No tasks yet. New tasks are dispatched from the Codex MCP.");
+  if (!state.jobs.length) message(ui.jobs, "No tasks yet. New tasks are dispatched through the CrewDispatch MCP.");
   for (const job of state.jobs) {
     const unread = isUnreadJob(job);
     const button = document.createElement("button");
@@ -1886,7 +1887,7 @@ function appendBubble(role: "user" | "assistant", text: string, label?: string):
   bubble.className = `bubble ${role}`;
   const who = document.createElement("div");
   who.className = "who";
-  who.textContent = label || (role === "user" ? "You / Codex" : "Assistant");
+  who.textContent = label || (role === "user" ? "You" : "Assistant");
   const content = document.createElement("div");
   content.textContent = text;
   bubble.append(who, content);
@@ -2112,6 +2113,19 @@ function terminalErrorNotice(detail: JobDetail): string {
   return `Run ${run} ended with an error before an assistant result was recorded.`;
 }
 
+function userMessageBaseLabel(message: { generation: number; source?: string | null }, detail: JobDetail): string {
+  const source = message.source ?? (message.generation === 0 ? detail.notify?.kind : null);
+  switch (source) {
+    case "codex":
+    case "codex_thread": return "You / Codex";
+    case "claude":
+    case "claude_session": return "You / Claude";
+    case "dashboard": return "You / Dashboard";
+    case "callback": return "You / External caller";
+    default: return "You";
+  }
+}
+
 function renderConversation(detail: JobDetail): void {
   empty(ui.conversation);
   if (!detail.history_available) {
@@ -2119,7 +2133,8 @@ function renderConversation(detail: JobDetail): void {
   }
   const assistantByGeneration = new Map(detail.assistant_messages.map((m) => [m.generation, m]));
   for (const m of detail.user_messages) {
-    appendBubble("user", m.text, m.generation === 0 ? "You / Codex · first task" : `You / Codex · follow-up ${m.generation}`);
+    const who = userMessageBaseLabel(m, detail);
+    appendBubble("user", m.text, m.generation === 0 ? `${who} · first task` : `${who} · follow-up ${m.generation}`);
     const reply = assistantByGeneration.get(m.generation);
     if (reply) appendBubble("assistant", reply.text, `${providerLabel(detail.provider)} · response ${m.generation + 1}`);
   }

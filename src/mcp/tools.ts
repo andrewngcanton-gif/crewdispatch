@@ -128,6 +128,15 @@ function root(deps: ToolDeps): string {
   return resolveDataRoot(deps.root, deps.env ?? process.env);
 }
 
+function callerMessageSource(target: NotifyTarget): "codex" | "claude" | "callback" | "unknown" {
+  switch (target.kind) {
+    case "codex_thread": return "codex";
+    case "claude_session": return "claude";
+    case "callback": return "callback";
+    default: return "unknown";
+  }
+}
+
 function dashboardSessionKey(target: NotifyTarget): string | null {
   if (target.kind === "codex_thread" && target.codexThreadId) return `codex:${target.codexThreadId}`;
   if (target.kind === "claude_session") {
@@ -418,10 +427,9 @@ export async function followUpJob(args: unknown, deps: ToolDeps = {}): Promise<T
       cliPath: deps.cliPath,
       workerScript: deps.workerScript,
       env: deps.env,
-      ...(target ? { notifyTarget: target } : {})
+      ...(target ? { notifyTarget: target, messageSource: callerMessageSource(target) } : {})
     });
-    return toolJson({
-      ok: true,
+    return toolJson({      ok: true,
       accepted: true,
       job_id: result.job.id,
       status: result.job.status,

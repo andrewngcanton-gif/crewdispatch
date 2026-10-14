@@ -334,7 +334,7 @@ test("internal release candidate archive installs, diagnoses, upgrades and unins
     assert.equal(cleanroomJson.gatekeeperChecked, false);
     assert.equal(cleanroomJson.cleanOsAssumed, false);
     assert.equal(cleanroomJson.providerProbeMode, "stubbed-command-code-metadata-only");
-    assert.equal(cleanroomJson.packageVersion, "0.1.3");
+    assert.equal(cleanroomJson.packageVersion, "0.1.4");
     assert.equal((cleanroomJson.archive as Record<string, unknown>).sha256, report.archive.sha256);
     assert.equal(cleanroomJson.doctorStatus, "healthy");
     assert.equal((cleanroomJson.wrapperChecks as unknown[]).length, 2);

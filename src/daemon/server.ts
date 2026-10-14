@@ -369,7 +369,8 @@ export async function startDaemon(rootInput: string, opts: StartDaemonOptions = 
               cliPath: input.cliPath,
               workerScript: input.workerScript,
               env: input.env,
-              notifyTarget: input.notifyTarget
+              notifyTarget: input.notifyTarget,
+              messageSource: input.messageSource
             });
             if (!result.ok) {
               respond({ version: 1, id: req.id, ok: false, op: "continue", code: result.code, message: result.error });
