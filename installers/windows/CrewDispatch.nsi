@@ -57,7 +57,7 @@ Section "CrewDispatch" SEC_MAIN
   SetShellVarContext current
   InitPluginsDir
   SetOutPath "$PLUGINSDIR\payload"
-  File /r "${PAYLOAD_DIR}/*"
+  File /r "${PAYLOAD_DIR}\\*.*"
 
   StrCpy $0 "install"
   IfFileExists "$INSTDIR\.jobquay-install.json" 0 +2
