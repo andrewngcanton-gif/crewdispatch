@@ -33,6 +33,15 @@ BrandingText "CrewDispatch"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
+!insertmacro MUI_UNPAGE_WELCOME
+UninstPage custom un.RemoveDataPage un.RemoveDataPageLeave
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_UNPAGE_FINISH
+
+; MUI page text and welcome/finish bitmaps are initialized by a language macro.
+; Keep this after every MUI page declaration so both installer and uninstaller
+; pages receive their standard strings/resources.
+!insertmacro MUI_LANGUAGE "English"
 
 Var NodeExe
 Var RemoveData
@@ -106,11 +115,6 @@ FunctionEnd
 Function un.RemoveDataPageLeave
   ${NSD_GetState} $RemoveDataCheckbox $RemoveData
 FunctionEnd
-
-!insertmacro MUI_UNPAGE_WELCOME
-UninstPage custom un.RemoveDataPage un.RemoveDataPageLeave
-!insertmacro MUI_UNPAGE_INSTFILES
-!insertmacro MUI_UNPAGE_FINISH
 
 Section "Uninstall"
   SetShellVarContext current

@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "620e53aa356a167e3d96aa96381e42c7d3aa14e4",
+  "sourceCommit": "a464fec1940c5a7184e61931cad2ff5fe1e99107",
   "sourceDirty": false,
   "files": [
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": ".github/workflows/installer-ci.yml",
-      "sha256": "9bf2c18e76290e74f68b8d7e5beefdbddbde55251ac56352faa4b7a0df91b331"
+      "sha256": "52006c86e4f5d2216cbf7bf7f7c93f326041cfa7c0f24139da18a1f46f544855"
     },
     {
       "path": ".gitignore",
@@ -25,7 +25,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "d4cd1dca1e5764bf99b58063cdcf931df858436863b7001de4e29ac277da3d15"
+      "sha256": "2caa7d5ac4c7db7316ef848bbfd586c52194366d4752c6303f5ef50777616201"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -37,7 +37,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "798884e8bfbb170d1d6ab021ef0a8214350712e771b1c9421e16f677acb39155"
+      "sha256": "43d3576af0c5bd9e097892baa3a1698ecd4ca17d2971f4f2e6d1f563cab11494"
     },
     {
       "path": "THIRD_PARTY_NOTICES",
@@ -53,7 +53,7 @@
     },
     {
       "path": "docs/getting-started.md",
-      "sha256": "b5fbe17320ab6815cdac916591465999751b4b0d379ef7c079f4b765b66233fc"
+      "sha256": "dfc2da4ae1622fa33bae3b729487a70f8bdbd003db2a015552a370b469d167f0"
     },
     {
       "path": "docs/uninstall.md",
@@ -65,7 +65,7 @@
     },
     {
       "path": "installers/windows/CrewDispatch.nsi",
-      "sha256": "9d9837944aa9293aaf413c73142c75d1c54431008d293bde95bf5c7c12bcadf4"
+      "sha256": "3e57451bec7fc1d5a5a74697c7e86d242f1321fe0958c3e7421e5392d7d772a4"
     },
     {
       "path": "integrations/claude/commands/crewdispatch.md",
@@ -77,15 +77,15 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "50c4bb3dc433617da4bdebc59b3daedacc496e2c2985a7acafd6cfcc8246a44c"
+      "sha256": "5369e80dd12bfe833a460f2a5497952d8c4ea4f33131d9aa2e949ba5dd389e4f"
     },
     {
       "path": "package.json",
-      "sha256": "62212c7e128e656bea80933581d6c355be96ec11c03af4fbb7a74ae3440fd20b"
+      "sha256": "a653098839f3d02aa3b2006d4dc1f6872bb5487ea802e79d1be040275f4ff4b2"
     },
     {
       "path": "plugins/crewdispatch/.codex-plugin/plugin.json",
-      "sha256": "82fcd4cd98a83729ee016caf07ec6140773139cf532c24db6bbc9186131083ea"
+      "sha256": "ea5d63a99d2287a6b09a793a8fc531b4bf359e6c76f2c22d4af27eee78aadf76"
     },
     {
       "path": "plugins/crewdispatch/mcp.template.json",
@@ -105,7 +105,7 @@
     },
     {
       "path": "scripts/build-release-candidate.cjs",
-      "sha256": "024f1f6f5aed8a9b0a7f032ba27617a57a74b49efc38832eec8775da29582a07"
+      "sha256": "9d8e296d0d1e37b8609fdfd30f235179a60e962fe5a29e0669385c4919e7efeb"
     },
     {
       "path": "scripts/build-windows-installer.cjs",
@@ -421,7 +421,7 @@
     },
     {
       "path": "src/mcp/server.ts",
-      "sha256": "2db66fb4ccd23e5aac57300e66e64a711ba943765503105bd5e7c839f4dbc64f"
+      "sha256": "370d12e4783200363bdc465191141a088aab3916caf60269056b7f246b277c37"
     },
     {
       "path": "src/mcp/tools.ts",
@@ -561,7 +561,7 @@
     },
     {
       "path": "src/tests/e2e/macos-command-code-real.e2e.ts",
-      "sha256": "4b40abbf475e5727648378204ea150b0dd747322fd87f6ff14fced5087c18f1e"
+      "sha256": "3f2052502e34a7ea15d795cc9255f03e2f4190d481b6e3e259c5de4c1a0fdf82"
     },
     {
       "path": "src/tests/e2e/macos-lifecycle-probe.e2e.ts",
@@ -677,7 +677,7 @@
     },
     {
       "path": "src/tests/integration/claude-packaged-install.test.ts",
-      "sha256": "13c7e9beaaf268e1daaa0a8b5157f1b9f06a7f88d75c26b29dd2d887b2232802"
+      "sha256": "84c5dd2756caff7adb4ae2b6d6f1f9b10500d334a18e439d4d074b2b5927aa3e"
     },
     {
       "path": "src/tests/integration/claude-recovery-real.test.ts",
@@ -781,7 +781,7 @@
     },
     {
       "path": "src/tests/integration/macos-dashboard-lifecycle.test.ts",
-      "sha256": "bb757d3a67e78393be507c34c0668b30b8d1e262f0c674823febe63c608084ff"
+      "sha256": "a78db18428ed7f97eb87346c71837d634fb152b59e76108face0d8910a93b9af"
     },
     {
       "path": "src/tests/integration/macos-data-root.test.ts",
@@ -825,7 +825,7 @@
     },
     {
       "path": "src/tests/integration/release-candidate.test.ts",
-      "sha256": "1965cebee25ef6c8d02e1b26fdd95cfaa6b1f1af47e00c4d652e272623fad99d"
+      "sha256": "d17f68b8503a5e4d6c10afe0c0e979e65f1853d63393d49ff5c8cbee966b2ae9"
     },
     {
       "path": "src/tests/integration/schema-rollback-mcp.test.ts",
@@ -1074,6 +1074,10 @@
     {
       "path": "src/tests/unit/windows-hidden-spawn-guard.test.ts",
       "sha256": "134c5540ae1e9ea632c0d4421e4ef021e5a1a32648da6ea1c65496884a7ff43b"
+    },
+    {
+      "path": "src/tests/unit/windows-installer-ui.test.ts",
+      "sha256": "073c1b49c9620e5e71e8fb894af7d83d8b44d00ec731bc472a367aecab8c7026"
     },
     {
       "path": "src/tests/unit/workbuddy-acp-normalizer.test.ts",

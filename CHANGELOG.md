@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2 — in validation
+
+Installer UI patch release.
+
+- Fixes the blank Windows installer welcome page.
+- Adds a regression for NSIS Modern UI language initialization.
+- macOS keeps the standard Apple Installer UI; this patch does not change its installer presentation.
+
 ## 0.1.1 — 2026-10-14
 
 Installer-focused patch release.

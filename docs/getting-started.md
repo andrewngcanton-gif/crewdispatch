@@ -13,9 +13,9 @@ Install and sign in to Command Code and/or WorkBuddy AI using the provider's own
 
 ## 2. Install CrewDispatch
 
-Windows: download and run `CrewDispatch-Setup-0.1.1.exe`.
+Windows: download and run `CrewDispatch-Setup-0.1.2.exe`.
 
-macOS: download and open `CrewDispatch-0.1.1.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
+macOS: download and open `CrewDispatch-0.1.2.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
 
 The macOS package is unsigned/not notarized. If macOS blocks it, use **Open Anyway** in System Settings → Privacy & Security.
 
