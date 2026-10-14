@@ -25,11 +25,15 @@ jobs:
       - name: Build exact Windows payload
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force candidate | Out-Null
-          node scripts/build-release-candidate.cjs --output-dir candidate --scope command-code+workbuddy-ai | Tee-Object -FilePath candidate/report.stdout.json
-          $zip = Get-ChildItem candidate -Filter '*.zip' | Select-Object -First 1
+          $candidate = Join-Path $env:RUNNER_TEMP 'crewdispatch-candidate'
+          New-Item -ItemType Directory -Force $candidate | Out-Null
+          node scripts/build-release-candidate.cjs --output-dir $candidate --scope command-code+workbuddy-ai | Tee-Object -FilePath (Join-Path $candidate 'report.stdout.json')
+          $zip = Get-ChildItem $candidate -Filter '*.zip' | Select-Object -First 1
           if (-not $zip) { throw 'Windows payload ZIP missing' }
-          Expand-Archive -Path $zip.FullName -DestinationPath candidate/unpacked -Force
+          $unpacked = Join-Path $env:RUNNER_TEMP 'crewdispatch-unpacked'
+          Expand-Archive -Path $zip.FullName -DestinationPath $unpacked -Force
+          "CREWDISPATCH_WINDOWS_CANDIDATE=$candidate" >> $env:GITHUB_ENV
+          "CREWDISPATCH_WINDOWS_UNPACKED=$unpacked" >> $env:GITHUB_ENV
       - name: Install NSIS
         shell: pwsh
         run: choco install nsis -y --no-progress
@@ -41,7 +45,9 @@ jobs:
           if (-not (Test-Path $makensis)) { throw 'makensis.exe not found after NSIS install' }
           $env:MAKENSIS = $makensis
           New-Item -ItemType Directory -Force installer-out | Out-Null
-          node scripts/build-windows-installer.cjs --payload-dir candidate/unpacked --output installer-out/CrewDispatch-Setup-0.1.1.exe | Tee-Object -FilePath installer-out/windows-installer.json
+          node scripts/build-windows-installer.cjs --payload-dir $env:CREWDISPATCH_WINDOWS_UNPACKED --output installer-out/CrewDispatch-Setup-0.1.1.exe | Tee-Object -FilePath installer-out/windows-installer.json
+          New-Item -ItemType Directory -Force installer-out/candidate | Out-Null
+          Copy-Item (Join-Path $env:CREWDISPATCH_WINDOWS_CANDIDATE '*') installer-out/candidate -Force
           if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.1.exe)) { throw 'setup EXE missing' }
       - name: Silent install and uninstall lifecycle
         shell: pwsh
@@ -67,9 +73,9 @@ jobs:
           path: |
             installer-out/CrewDispatch-Setup-0.1.1.exe
             installer-out/windows-installer.json
-            candidate/*.zip
-            candidate/*.json
-            candidate/*.sha256
+            installer-out/candidate/*.zip
+            installer-out/candidate/*.json
+            installer-out/candidate/*.sha256
 
   macos-payload:
     strategy:
@@ -103,17 +109,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p candidate
-          node scripts/build-release-candidate.cjs --output-dir candidate --scope command-code+workbuddy-ai | tee candidate/report.stdout.json
-          ZIP="$(find candidate -maxdepth 1 -name '*.zip' -print -quit)"
+          CANDIDATE="$RUNNER_TEMP/crewdispatch-candidate"
+          mkdir -p "$CANDIDATE"
+          node scripts/build-release-candidate.cjs --output-dir "$CANDIDATE" --scope command-code+workbuddy-ai | tee "$CANDIDATE/report.stdout.json"
+          ZIP="$(find "$CANDIDATE" -maxdepth 1 -name '*.zip' -print -quit)"
           test -n "$ZIP"
+          mkdir -p candidate-out
+          cp "$CANDIDATE"/* candidate-out/
       - uses: actions/upload-artifact@v4
         with:
           name: CrewDispatch-0.1.1-macos-payload-${{ matrix.artifact_arch }}
           path: |
-            candidate/*.zip
-            candidate/*.json
-            candidate/*.sha256
+            candidate-out/*.zip
+            candidate-out/*.json
+            candidate-out/*.sha256
 
   macos-installer-package:
     needs: macos-payload

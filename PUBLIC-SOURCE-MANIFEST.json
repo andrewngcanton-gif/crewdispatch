@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "296069ec596d50721d96884556b687cfc8b834c2",
+  "sourceCommit": "118da5657a1dac3d04fda7777a1bbf9b80aaa562",
   "sourceDirty": false,
   "files": [
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": ".github/workflows/installer-ci.yml",
-      "sha256": "41815650d691b975712d3e6dd1a9c08a81adbc908c57776763181a67bbf0161f"
+      "sha256": "27751f8acbad70644f825f035ec536288751cc55a74bf0a1d891279333ab19ec"
     },
     {
       "path": ".gitignore",
