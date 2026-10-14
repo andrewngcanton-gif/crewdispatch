@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.3 — in validation
+## 0.1.3 — 2026-10-14
 
 Caller-integration and onboarding patch release.
 
