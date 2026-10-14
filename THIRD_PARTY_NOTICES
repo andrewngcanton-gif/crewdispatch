@@ -1,0 +1,180 @@
+CrewDispatch third-party notices
+===========================
+
+CrewDispatch's own source and build output are licensed under the Apache License,
+Version 2.0; the complete product license is shipped separately as LICENSE. The
+`private: true` package flag only prevents accidental npm publication and does not
+change that license. This file records third-party copyrights and license texts for
+material bundled with the install payload and for behaviour rewritten or adapted
+from earlier projects. It is a notice file, not a legal opinion, and it does not
+replace either CrewDispatch's LICENSE or any third-party license.
+
+The installer copies this file unchanged to <install-root>/THIRD_PARTY_NOTICES and
+records its SHA-256 in the install marker. The installed package also carries the
+unmodified upstream LICENSE file of every bundled npm package at the paths listed in
+section 2. The auditable payload inventory is maintained in the canonical development
+records and is reviewed before release.
+
+------------------------------------------------------------------------------
+1. Material adapted or rewritten from earlier projects
+------------------------------------------------------------------------------
+
+1.1 wb-crew — MIT (Copyright (c) 2026 WorkBuddy Crew contributors)
+
+Parts of CrewDispatch's behaviour (CLI discovery and Windows spawn handling, NDJSON
+stream parsing and exit classification, durable job store and generation registry,
+process-tree cancel, MCP tool surface, wake notification, model selection,
+rate-limit downgrade handling, Hub settings and retention policy) were rewritten in
+TypeScript - and in places adapted - from a read-only inspection of a private
+`wb-crew` installation supplied to the project owner. Internal provenance records
+retain the inspected file hashes and behavior mapping. No file from that installation
+is copied verbatim and no file in it was written to during that work.
+
+The wb-crew LICENSE file inspected during those batches had SHA-256
+2736031c5b8ac93b02ab490bd5b3512f572008abd89b6ea1d04409d5abbf7b11 and reads in full:
+
+--- wb-crew LICENSE, full text begin ---
+MIT License
+
+Copyright (c) 2026 WorkBuddy Crew contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+--- wb-crew LICENSE, full text end ---
+
+1.2 dsh-crew — MIT (Copyright (c) 2026 ZSeven-W)
+
+The CrewDispatch owner has confirmed that this project derives from an older version of
+dsh-crew (https://github.com/ZSeven-W/dsh-crew), in addition to the wb-crew behaviour
+records above. The exact upstream base commit is not recoverable from currently retained evidence
+without speculation. A 2026-10-12 public-history re-check bounded the known public
+history to the initial commit `01b4cb41…` through the original audit's 49-commit rc.10
+checkpoint `230337e1…`; upstream already supported Codex in its initial commit, and the
+original all-49 mechanical scan found no qualifying verbatim block that could identify
+one revision. The relationship is therefore recorded as derivation/adaptation with an
+explicit unknown exact base, not as mere inspiration and not as a guessed commit.
+dsh-crew's LICENSE (fetched from the upstream repository on 2026-09-25) reads in full:
+
+--- dsh-crew LICENSE, full text begin ---
+MIT License
+
+Copyright (c) 2026 ZSeven-W
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+--- dsh-crew LICENSE, full text end ---
+
+------------------------------------------------------------------------------
+2. npm packages installed into the staged package by the installer
+------------------------------------------------------------------------------
+
+The installer runs `npm ci --omit=dev` from the staged package-lock.json. At the
+time of writing that lockfile pins exactly three non-development packages. npm
+installs each package's own LICENSE file unmodified; those files are not edited,
+shortened or replaced by CrewDispatch. The paths below are relative to the install root.
+
+  @modelcontextprotocol/core    2.1.0   node_modules/@modelcontextprotocol/core/LICENSE
+  @modelcontextprotocol/server  2.1.0   node_modules/@modelcontextprotocol/server/LICENSE
+  zod                           4.2.0   node_modules/zod/LICENSE
+
+@modelcontextprotocol/core and @modelcontextprotocol/server: their npm metadata
+`license` field says "MIT", but the LICENSE file that is actually installed is NOT a
+plain MIT text. Both files are byte-identical
+(SHA-256 0382b0057770ca05e9c350a50aa3b1c1fea84da0bc81d723bf00b9aa841be58a, 12227
+bytes) and open with the MCP project's licensing-transition statement, quoted here
+verbatim from the installed files:
+
+  The MCP project is undergoing a licensing transition from the MIT License to the
+  Apache License, Version 2.0 ("Apache-2.0"). All new code and specification
+  contributions to the project are licensed under Apache-2.0. Documentation
+  contributions (excluding specifications) are licensed under CC-BY-4.0.
+
+  Contributions for which relicensing consent has been obtained are licensed under
+  Apache-2.0. Contributions made by authors who originally licensed their work under
+  the MIT License and who have not yet granted explicit permission to relicense
+  remain licensed under the MIT License.
+
+  No rights beyond those granted by the applicable original license are conveyed for
+  such contributions.
+
+Each file then contains the full Apache License 2.0 text, the full MIT text
+(Copyright (c) 2024-2025 Model Context Protocol a Series of LF Projects, LLC.) and a
+statement that documentation (excluding specifications) is licensed under CC-BY-4.0.
+Neither package ships a separate NOTICE file. Read the complete text at the installed
+path above; this notice does not summarise it as MIT-only and does not replace it.
+
+zod: MIT. Its installed LICENSE (SHA-256
+3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8, 1072 bytes)
+reads in full:
+
+--- zod LICENSE, full text begin ---
+MIT License
+
+Copyright (c) 2025 Colin McDonnell
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+--- zod LICENSE, full text end ---
+
+------------------------------------------------------------------------------
+3. External prerequisites — not bundled, no license text shipped here
+------------------------------------------------------------------------------
+
+  Command Code CLI / app       user-installed provider software. Never copied, bundled,
+                               installed or redistributed by CrewDispatch; its own terms
+                               apply between the user and its provider.
+  WorkBuddy AI app / CLI       user-installed provider software. Never copied, bundled,
+                               installed or redistributed by CrewDispatch; its own terms
+                               apply between the user and its provider.
+  Node.js >= 22 and npm        required to run the installer and the product; the
+                               platform install is not vendored.
+  TypeScript, @types/node,     development dependencies only; `npm ci --omit=dev`
+  undici-types                 does not install them into the staged package.
+
+No fonts, icons, images or other third-party assets are bundled. No credentials,
+provider databases or user data of any CLI are copied into the package.

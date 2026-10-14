@@ -1,0 +1,52 @@
+{
+  "name": "crewdispatch",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "description": "CrewDispatch — local orchestration for durable long-running coding-agent jobs with Command Code and WorkBuddy AI adapters.",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "crewdispatch": "dist/cli/crewdispatch-cli.js",
+    "jobquay": "dist/cli/jobquay-cli.js"
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json && tsc -p tsconfig.browser.json && node scripts/build-macos-helper.cjs",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "npm run build && node scripts/run-tests.cjs",
+    "test:unit": "npm run build && node scripts/run-tests.cjs dist/tests/unit",
+    "smoke": "npm run build && node dist/cli/probe-cli.js",
+    "mcp": "node dist/mcp/server.js",
+    "hub": "node dist/hub/server.js",
+    "web": "node dist/cli/crewdispatch-cli.js web",
+    "plugin:mcp": "node scripts/generate-plugin-mcp.cjs",
+    "codex:install-command": "node scripts/install-codex-command.cjs",
+    "codex:uninstall-command": "node scripts/uninstall-codex-command.cjs",
+    "codex:run-task": "node scripts/codex-jobquay-run-task.cjs",
+    "install:internal": "node dist/cli/install-cli.js",
+    "settings": "node dist/cli/settings-cli.js",
+    "test:integration:install": "npm run build && node --test dist/tests/integration/install-cli.test.js",
+    "test:integration:release-candidate": "npm run build && node --test dist/tests/integration/release-candidate.test.js",
+    "release:candidate": "npm run build && node scripts/build-release-candidate.cjs",
+    "test:e2e:command-code": "npm run build && node dist/cli/one-shot-cli.js",
+    "test:e2e:command-code:installed": "npm run build && node --test dist/tests/e2e/installed-command-code-real-cli.e2e.js",
+    "test:e2e:command-code:acp": "npm run build && node --test dist/tests/e2e/installed-command-code-acp.e2e.js",
+    "test:e2e:job-service": "npm run build && node --test dist/tests/e2e/job-service-real-cli.e2e.js",
+    "test:e2e:mcp": "npm run build && node --test dist/tests/e2e/mcp-real-cli.e2e.js",
+    "test:e2e:settings": "npm run build && node --test dist/tests/e2e/settings-real-cli.e2e.js",
+    "test:e2e:windows-host-restart": "npm run build && set JOBQUAY_ACCEPT_WINDOWS_HOST_RESTART=1&& node --test dist/tests/e2e/windows-host-restart-survival.e2e.js",
+    "test:e2e:macos-lifecycle": "npm run build && JOBQUAY_ACCEPT_MACOS_LIFECYCLE=1 node --test dist/tests/e2e/macos-lifecycle-probe.e2e.js",
+    "test:e2e:macos-process-source": "node scripts/probe-macos-process-source.cjs",
+    "test:e2e:macos-adversarial": "npm run build && node scripts/probe-macos-process-adversarial.cjs",
+    "test:e2e:macos-workspace-identity": "npm run build && node scripts/probe-macos-workspace-identity.cjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.2",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.1.0",
+    "zod": "^4.2.0"
+  }
+}

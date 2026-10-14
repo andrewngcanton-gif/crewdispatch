@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+*.log
+work/
+
+# Local task packets, raw captures and desktop investigation scratch files.
+/artifacts/
+/.jobquay-*
+/plugins/crewdispatch/.mcp.json
+/$null
+/__pycache__/

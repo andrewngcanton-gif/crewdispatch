@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "crewdispatch": {
+      "command": "__CREWDISPATCH_NODE_ENTRY__",
+      "args": ["__CREWDISPATCH_SERVER_ENTRY__"]
+    }
+  }
+}

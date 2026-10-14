@@ -1,0 +1,1099 @@
+{
+  "schema": "crewdispatch-public-source-v1",
+  "sourceCommit": "13fb51bd5c88c223c634ede21b0c86b250fe161e",
+  "sourceDirty": false,
+  "files": [
+    {
+      "path": ".github/CODEOWNERS",
+      "sha256": "48447f541e05d349ce4a2581ad76f7d5aa5d59836b1460b4fe2921898ccd32b0"
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "67a6d025caf5170ef07a0ec8b33eedc4821ae55d6d089a649b4cb825e3a7dfa6"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "1c2d5fae0b859631b64f00a2dd90dd7add4ba108e420062cbb5b8adadbd3a161"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "sha256": "dc4a8f67a6456661818a38ea8a2259eb26972909adfbd83e4ca84245ce199dd8"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "489584f8f26c9e23ac998b261d5b909fd96b386202496cb58c4d8bcae74ff283"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "4ee4c203ea88e0d9fb0b460fc7cf4a621cebd72d2697e90869b00cb78631c9b8"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "4e41b8fec5e26233374de6741c4cdf4f01f20107b2eebc6fc20de717c154f51f"
+    },
+    {
+      "path": "README.md",
+      "sha256": "4af4dd9e9c57dbbf5c576d5a38341799ee487917a34aadd9a7f1f8bb7e68f2c6"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES",
+      "sha256": "acbb023f3b7c2cba40b74bac7eaac57326c89f21a5dc9e5783bbd63d9a2a7f47"
+    },
+    {
+      "path": "docs/callers.md",
+      "sha256": "afbe5939ca933d087ddb9e425a1f3ab4a6631c82e608107d6d234f7da4142336"
+    },
+    {
+      "path": "docs/dashboard.md",
+      "sha256": "608fc6a8942a1297f2393eb6838b6e8b9709ecf87539174de0239ce6be19d89c"
+    },
+    {
+      "path": "docs/getting-started.md",
+      "sha256": "a6512cfacb27a5b3a2cd3b78ee1c199659e4c11e836f16a96c1399aa0cf018df"
+    },
+    {
+      "path": "docs/uninstall.md",
+      "sha256": "dbc32641c66c7d4d6e1f4d3aa65e5582f80f81d997c61eab20935645b5558837"
+    },
+    {
+      "path": "integrations/claude/commands/crewdispatch.md",
+      "sha256": "27f3b39452549c25cd2855e8ef5c70adcf9034fe9db5cbea9ab02b10fae09206"
+    },
+    {
+      "path": "integrations/codex/prompts/crewdispatch.md",
+      "sha256": "12a42053beb493ec5e63747dded614053624e79be8b9764f1345cbc1bc100e6e"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "0ea03f01822a1b30101ab6223ec39745a536fe6b59f0dc35b378de05514cce1d"
+    },
+    {
+      "path": "package.json",
+      "sha256": "ec00731b5b321210c2db2f29183d50f4e2e5e15b86aae1b7614410f7cc73d4e5"
+    },
+    {
+      "path": "plugins/crewdispatch/.codex-plugin/plugin.json",
+      "sha256": "9fe6fe65570b697a6d8cb51bdcb9eefc715d27d47ef79eb9c131df5046c9854d"
+    },
+    {
+      "path": "plugins/crewdispatch/mcp.template.json",
+      "sha256": "bce88d91b0af1b118cb16e7a4a87b1c8f63cc3fd91560596197bc0d9ceb5a6b7"
+    },
+    {
+      "path": "plugins/crewdispatch/skills/crewdispatch/SKILL.md",
+      "sha256": "e376e13911213b81c77ea33347dae7640cb3e30598570613e8ca878e9dffac88"
+    },
+    {
+      "path": "scripts/build-macos-helper.cjs",
+      "sha256": "7c55c5d92c64b1bcd7402bebdcd40ad13cc074a5eb9179e5b2e88d2f52ff52ae"
+    },
+    {
+      "path": "scripts/build-release-candidate.cjs",
+      "sha256": "b3c9ea09fac126919165513d5b82d37beaf3ff05d3c24453ca8d7aa4ae75b36f"
+    },
+    {
+      "path": "scripts/codex-jobquay-e2e-driver.cjs",
+      "sha256": "b565c3b80d77d827ca78c2c96f8f9a8c98ee22f64422c85f2e4b1366ca614030"
+    },
+    {
+      "path": "scripts/codex-jobquay-run-task.cjs",
+      "sha256": "8577733a1a868abb470f68f1401e752afc061287d4638036ecff16c1c0b35cdd"
+    },
+    {
+      "path": "scripts/generate-plugin-mcp.cjs",
+      "sha256": "7363bcae87ad2a1ad09e5840190b1981b9484f08cb10592c2900dd6418e4ba15"
+    },
+    {
+      "path": "scripts/install-codex-command.cjs",
+      "sha256": "69e6c34a90e0690b6cde6cb419e263f0d5cdfde1795d6795c3926d7a1ce203b0"
+    },
+    {
+      "path": "scripts/macos-architecture.cjs",
+      "sha256": "ed963bd20f7aba496cfd5185b8583afe45d14154661549e83132ed55c1d4cec9"
+    },
+    {
+      "path": "scripts/macos-process-info.c",
+      "sha256": "5a8d9beaf2d662290198b9301e167778affc8642629a052aea576b2cba5fa8f9"
+    },
+    {
+      "path": "scripts/probe-command-code-acp.cjs",
+      "sha256": "a9642e957516e3f68506896dd9264c1c09a41297ee6535ee7fe626d82bf7130f"
+    },
+    {
+      "path": "scripts/probe-macos-process-adversarial.cjs",
+      "sha256": "72f44ed504d652248c3e45ede294991d48be38cd01b78f2b4f0c0e5b72e45e3d"
+    },
+    {
+      "path": "scripts/probe-macos-process-source.cjs",
+      "sha256": "70c04ac41716dc9fa814af5570785093c4ad99867253e872ca57dd7ec58956ee"
+    },
+    {
+      "path": "scripts/probe-macos-workspace-identity.cjs",
+      "sha256": "0fc0240c4ae778288b4c85303774ad59407cd0e7bf1fb5bd792589f9f6bdb939"
+    },
+    {
+      "path": "scripts/run-release-cleanroom-ci.cjs",
+      "sha256": "5b167a4b6e9cfff9b0d42a288c21a204311d38d627814bfd7b21c2a998c64a1e"
+    },
+    {
+      "path": "scripts/run-tests.cjs",
+      "sha256": "3e7a4935c733aa65b39fbd8f165053a635055651a4e6be1ab21b8847b2b2c8ea"
+    },
+    {
+      "path": "scripts/uninstall-codex-command.cjs",
+      "sha256": "be758cf7d5027fb487005012757ddbb4dc32a252231fe9872208344c29dec301"
+    },
+    {
+      "path": "scripts/verify-release-candidate.cjs",
+      "sha256": "883430ae263ed7dc7f4d20fc7d84b97fc072186049446c9889a588a87265d942"
+    },
+    {
+      "path": "scripts/webcodex-mcp-console.cjs",
+      "sha256": "f7c07d88f8b256e7b46ce49f7ed23e053a27956155b09119598991a92c69886e"
+    },
+    {
+      "path": "src/claude/binding.ts",
+      "sha256": "ce6d8c2db1bedad27d6adb31f510215be8a9896d1f6ab9aa27b871e0d403e33e"
+    },
+    {
+      "path": "src/claude/client-install.ts",
+      "sha256": "0c8cb16b727a4d75c59c51b88516433488c7e6b6c81c288e88e41f726e77046e"
+    },
+    {
+      "path": "src/claude/hook.ts",
+      "sha256": "4d4ed24bee16e193e257da4e9f0bb35f7052b0b4c8ff2cbb52c9afdf25fee4c2"
+    },
+    {
+      "path": "src/claude/ids.ts",
+      "sha256": "d2de0f74e56d4da6d59accca108a0e882bc35490786c36417c85e274b8df4af8"
+    },
+    {
+      "path": "src/claude/lifecycle.ts",
+      "sha256": "e9c952af862524c9904dc9a73004ff3bc5a31655fcf17816b72794b3b06d81d6"
+    },
+    {
+      "path": "src/claude/messages.ts",
+      "sha256": "083973113d78f2fd1beaa7e01c3935ef9de85a7e6e34e9884669c1a10631d6e9"
+    },
+    {
+      "path": "src/claude/transport.ts",
+      "sha256": "6458635cea4aecc6e6b1260693fd4489b4ded127570d6cb0314c73ecfa0849fa"
+    },
+    {
+      "path": "src/cli/crewdispatch-cli.ts",
+      "sha256": "5ca56c4de1eae075da81d38d888eb6751e34b0832655fc4b002a45b7dfb36a00"
+    },
+    {
+      "path": "src/cli/fixture-process-wrapper.ts",
+      "sha256": "dafba8651f96d10054ad0aa727bdc2ee5a8f6135b0aacce87c5a71a4a1850284"
+    },
+    {
+      "path": "src/cli/fixture-runner.ts",
+      "sha256": "fec00861ef4837f80739dea01e2518f2a0898195515b150a9e9eaefe178989c7"
+    },
+    {
+      "path": "src/cli/install-cli.ts",
+      "sha256": "a147dbe82704147c9c662454e7e19ef16221da754627d1140188a70fb115614d"
+    },
+    {
+      "path": "src/cli/job-cli.ts",
+      "sha256": "372a78d1f9d57ee4a7c85f06b560f3496f01f15b144ecb9d1097c47ae722c7bc"
+    },
+    {
+      "path": "src/cli/jobquay-cli.ts",
+      "sha256": "33024f1110a1a3a72ca672ca10b9413cb7adfa22dc6130e67e63baaec043fb42"
+    },
+    {
+      "path": "src/cli/one-shot-cli.ts",
+      "sha256": "6884287fdfd297ea83394c1533a6043bae42ffdb15c663c987072137897d03a9"
+    },
+    {
+      "path": "src/cli/one-shot-verdict.ts",
+      "sha256": "1bc8f4f9d607666cdd8492a3f4a32c5e0f689905e9496f99ff9332df997015ba"
+    },
+    {
+      "path": "src/cli/probe-cli.ts",
+      "sha256": "d32bc4efb295b3ff8522304c3329d40546b3361c7638cc6ea7d22cbaba3f15b2"
+    },
+    {
+      "path": "src/cli/run-isolation.ts",
+      "sha256": "bab455567cae39aaf5de29dace0ae674acba13f9a684ee2ffdf8a7df9332598e"
+    },
+    {
+      "path": "src/cli/settings-cli.ts",
+      "sha256": "ad720ad3f44edd72d6a195d99e72f8bbc3b840f8134f8972c59be8f111319406"
+    },
+    {
+      "path": "src/config/global.ts",
+      "sha256": "be8f7805e0c92e2b285092a309fe39611904e56844bae5c62869df1b7d8b92c7"
+    },
+    {
+      "path": "src/config/index.ts",
+      "sha256": "1e543ebfcc6c4649826aa9d61d237dc9f62c4ac0e0131903b6ea0024c55815a7"
+    },
+    {
+      "path": "src/config/schema.ts",
+      "sha256": "088ea43bc07d0537cb64a3f466f455fa40fe773f7522b1b54478e587da593e17"
+    },
+    {
+      "path": "src/config/select.ts",
+      "sha256": "e56da680ace0ff592332c1164d94386230a7315069cef7484415bfebf42b43c8"
+    },
+    {
+      "path": "src/config/settings-probe-worker.ts",
+      "sha256": "672a31ccba5d29aa2d2103256297231f94305d695dbfad502c3d79d1a5229ec2"
+    },
+    {
+      "path": "src/config/settings-reads.ts",
+      "sha256": "b21402cb1ea05a971dceed56804b15be70ae8deae6737f9697d029de826c8964"
+    },
+    {
+      "path": "src/config/settings-registry.ts",
+      "sha256": "e2306ec5c3eef9adab0897bb2fcf088b5b5819451e3124428912401f91292329"
+    },
+    {
+      "path": "src/config/settings.ts",
+      "sha256": "dd0ca7461e8a65159e8ee9c7c49fb99694309ce57644d6eb1056fe8bb7220b59"
+    },
+    {
+      "path": "src/config/workbuddy-ai.ts",
+      "sha256": "55c08a823dc20569718b3c70540c0134d994dc326d206559d492efa4b25fe55d"
+    },
+    {
+      "path": "src/daemon/client.ts",
+      "sha256": "188ded0e99c264a717502813ff00b3cf90d21846544907f5b2ad248e4020b276"
+    },
+    {
+      "path": "src/daemon/dashboard-ensure.ts",
+      "sha256": "a1dbe440533ddd846c218a9394a0fb0cf954f4da53c841155947dfc6f6854a4f"
+    },
+    {
+      "path": "src/daemon/protocol.ts",
+      "sha256": "581d349e63dd8ecada90042804747c731571a1bfa6439bdccd10772095d15313"
+    },
+    {
+      "path": "src/daemon/server.ts",
+      "sha256": "443f344c0196b37f74910f5da5478647b7095bea8a199a9d2cf67e3135e6a24c"
+    },
+    {
+      "path": "src/dashboard/autostart.ts",
+      "sha256": "4f026d7f22cd623d8c9b31214eeb4c04d1cc4e2de24bfa4584fc0016dc4b2cd1"
+    },
+    {
+      "path": "src/dashboard/launcher.ts",
+      "sha256": "3e4941b04fcea25aa6cb28ea7060eade018a8b1f39321fbc328a78cb40de5be5"
+    },
+    {
+      "path": "src/hub/endpoint.ts",
+      "sha256": "9042ad146c6cf4913bc5111850beb0f95ba70e81515f9923fc0afcbbea06080f"
+    },
+    {
+      "path": "src/hub/identity.ts",
+      "sha256": "6d1105119d311407bb54cc4d4bb15428157dc84ebf9b1b4f78788267e2d9d382"
+    },
+    {
+      "path": "src/hub/retention.ts",
+      "sha256": "37396c4e83de78eb01c2699b08bf7a0c91720d7e56be258bb5f71f6936d90365"
+    },
+    {
+      "path": "src/hub/server.ts",
+      "sha256": "7beec877ae73fa7888bc50c6e1d701c08856b8546ad8e1ca39aae066a6e20419"
+    },
+    {
+      "path": "src/install/autostart-macos.ts",
+      "sha256": "aa002f066a87d2bd6a6c40c2351af28e84005d4fef6f3112132008e15e15c343"
+    },
+    {
+      "path": "src/install/autostart-windows.ts",
+      "sha256": "a7de7643cd6084e4b1f908f39301de178b8776c9f6670216516926f23973e693"
+    },
+    {
+      "path": "src/install/autostart.ts",
+      "sha256": "0476cce24d90d1ea8d2a811ef68f8330a290c7f1b9668269bc4c39336f3bfe48"
+    },
+    {
+      "path": "src/install/doctor.ts",
+      "sha256": "7be4be5f255d7998ecd75e792e2a078b590ff529c72964c302eec5cd713ea425"
+    },
+    {
+      "path": "src/install/manager.ts",
+      "sha256": "cf3702d772c2846c0e55dc4a625e239f2497d169e5af081dc56539b4609e0282"
+    },
+    {
+      "path": "src/install/marker.ts",
+      "sha256": "d3f82782e8a9c597600baec92a9990eedbf9041f223cf5b11f800fa81c622cac"
+    },
+    {
+      "path": "src/install/node-runtime.ts",
+      "sha256": "7d3f48735575e4361600f55b8a8f5ff101d2f7a691cbc9006f00062d03f87add"
+    },
+    {
+      "path": "src/jobs/approval-channel.ts",
+      "sha256": "6d5834fd2cc259967d4a0c685b8473106107eef1549b87ba1d037e5b8264283e"
+    },
+    {
+      "path": "src/jobs/approval.ts",
+      "sha256": "debf7227ebe0832886a63ff9986ede3e092b0f4ea9c5f3d5330dd86254b15fbd"
+    },
+    {
+      "path": "src/jobs/effort-provenance.ts",
+      "sha256": "c5a7a7c7654802d54c85b6f5599318d507dac8419b08e9a5b53ed41d5561594d"
+    },
+    {
+      "path": "src/jobs/generation.ts",
+      "sha256": "cf2b5a1a0bca7201b6f5b6f89b01400a013052a8a06e0e9326bf9ef852dae665"
+    },
+    {
+      "path": "src/jobs/messages.ts",
+      "sha256": "3ced97032440e7e8d925a83ab7e3f1eb09b436f40cb39f7c0111054d83182f5b"
+    },
+    {
+      "path": "src/jobs/notifications.ts",
+      "sha256": "f370aa8e1dc2a6cd7e1727e45c09198aa158945062c41d2bf511ca13cf6984c5"
+    },
+    {
+      "path": "src/jobs/provider-cancel.ts",
+      "sha256": "bfc27505f751a0f3246bb330856ea0f1b39ecd50cc8288b49d6bf58bb2cf31ae"
+    },
+    {
+      "path": "src/jobs/provider-maintenance.ts",
+      "sha256": "b570a465592971a0ecab3cfc64c078f27a68274abda798749fec906e309a41b2"
+    },
+    {
+      "path": "src/jobs/provider-managed.ts",
+      "sha256": "404133cdf557e36e56a5b1a937a350c9036b32e06d061473a4d8a47a0460d9fa"
+    },
+    {
+      "path": "src/jobs/provider-turn.ts",
+      "sha256": "75705171c905ab5df97e8fe425e2edc60edd513b1ea10f603d5c63685cd1dec4"
+    },
+    {
+      "path": "src/jobs/reconcile.ts",
+      "sha256": "c1113b4f944e912ca900814ec529f2cdba08445419e83d928fdf3eb34a0aac3b"
+    },
+    {
+      "path": "src/jobs/recovery.ts",
+      "sha256": "fe11212156095f9721c10d46bb2cae1595482d467bd5e993fd3fa146c7e46c29"
+    },
+    {
+      "path": "src/jobs/runner.ts",
+      "sha256": "0c48680d8aa569179c3512e71a53c68bbe2e0153d8c95485e8f5879f31543edb"
+    },
+    {
+      "path": "src/jobs/service.ts",
+      "sha256": "85e0dded18d73e0129114160e3957e479eb344e9589dd03fbaaa5c61f33482cb"
+    },
+    {
+      "path": "src/jobs/store.ts",
+      "sha256": "380dcebfe6cfd4845fd276973b0d423ba172f82c1f9d5c7316986e9f00721f5a"
+    },
+    {
+      "path": "src/jobs/types.ts",
+      "sha256": "41f3e568ea5f6e3c0b560e6b4ac51479d87e33f08e3d381f3a9cacc14d193def"
+    },
+    {
+      "path": "src/jobs/workspace.ts",
+      "sha256": "6d9fe865987e59faa36a65c3a885c2a2ebf52135b8ebdeb46bcb953b7d6630ea"
+    },
+    {
+      "path": "src/mcp/notify.ts",
+      "sha256": "5b0cf4a116521db081cb2d84c23834dc677c975e9344ddc9bb2c67c8c277f2a4"
+    },
+    {
+      "path": "src/mcp/server.ts",
+      "sha256": "ea47a325206a7b51f7c79b760e8a6afb6ed71592eb6139660f09ce449b72994b"
+    },
+    {
+      "path": "src/mcp/tools.ts",
+      "sha256": "c2d4b64f55f389aabc9ca4c1652eb15884af46e3ce4973bea142994dee2c1294"
+    },
+    {
+      "path": "src/mcp/view.ts",
+      "sha256": "aa9ddddf8bf1b152fe9b6c0f5b980ad4832304fc7075a415c3f9a0031255af6a"
+    },
+    {
+      "path": "src/onboarding/dashboard-hint.ts",
+      "sha256": "1281e8896e7255a31bb6719954ad6c2da0afc0d5df3a176e7ffd7c59640eaf0a"
+    },
+    {
+      "path": "src/providers/command-code/acp-bridge.ts",
+      "sha256": "783a1d576986a9db1049b1f2e9608e6ca86ea51f48a704e0456be4ad8019133a"
+    },
+    {
+      "path": "src/providers/command-code/acp-client.ts",
+      "sha256": "156e0e275ea8dcbd8afd1f4030c534664dd2bc81c06b392e3a91b7c2b9a85135"
+    },
+    {
+      "path": "src/providers/command-code/acp-normalizer.ts",
+      "sha256": "cc1622f0a3e543d986f420884fcec9846f769a0e8dc28988b7b0396190fdc82d"
+    },
+    {
+      "path": "src/providers/command-code/acp-wire.ts",
+      "sha256": "07016b170adb41856caf9fcf4761f2795e95f3c72dfc90ac8800bc7905523986"
+    },
+    {
+      "path": "src/providers/command-code/argv.ts",
+      "sha256": "430a38fd13950f9279642ec444c1701b42bd4649b7b73ef8a370f5b80adf1bbf"
+    },
+    {
+      "path": "src/providers/command-code/capability.ts",
+      "sha256": "7361a5db50f4678ce5daa072916d4b807561090a764af0b5954e2e6d962f17cf"
+    },
+    {
+      "path": "src/providers/command-code/catalog.ts",
+      "sha256": "a0eabbb76ee3617db83f7b0bfa5552aaa514d0c86a8aa95655eae93e0930d669"
+    },
+    {
+      "path": "src/providers/command-code/discovery.ts",
+      "sha256": "82d691dc3c7ad4df87628026f10576acea1b5e9e43d4ca2ce57e3f97891684fb"
+    },
+    {
+      "path": "src/providers/command-code/exit.ts",
+      "sha256": "afb2f13aaad8302b77cd4bfd342348f97c60283d5b0049e31bba767d8c6a91ab"
+    },
+    {
+      "path": "src/providers/command-code/index.ts",
+      "sha256": "6003ea33f602450182599a7ba5a9b1f8f35e06748cf63156001e2699f6816368"
+    },
+    {
+      "path": "src/providers/command-code/local-catalog.ts",
+      "sha256": "31fa4e111535f91d4adadd5d3d04844f5e2e930b61853e29bfcf162d36e0e8e6"
+    },
+    {
+      "path": "src/providers/command-code/probe.ts",
+      "sha256": "6a6d13f64a4e6f69044c550d637d2d6470082125bf481dfb46bfcb0fe6a4d9e6"
+    },
+    {
+      "path": "src/providers/command-code/spawn-plan.ts",
+      "sha256": "6e741e18f517881a8a859ae3693830ac1033ff146f784e0d8cc5d9cfa2ebc64d"
+    },
+    {
+      "path": "src/providers/command-code/stream.ts",
+      "sha256": "1d9dbff7c6404bc8b6b23de2a785f6a4a317dc01ecb0b0c8e4c401ba153784b5"
+    },
+    {
+      "path": "src/providers/provider.ts",
+      "sha256": "5033b4badb58c282897df2d77f2f80c5b2d5aac4ced96d50b3820e7fea372042"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/acp-normalizer.ts",
+      "sha256": "e8b4c4f7b4854fd2d1a281d8c3d07e4ea269b0998c1a465c166fb6ab35647622"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/approval-channel.ts",
+      "sha256": "f57ae3002a8169196a2f5a882044757c0cddc7d8ca96dd130cd9ef44794fc000"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/cancel-channel.ts",
+      "sha256": "72f404d114e210dabba895949bf1d756b8346b382b2401770d1039fe80cfd82c"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/desktop-bridge.ts",
+      "sha256": "e70b84a561cb451569c4f518409619f543b215017a18d94ed0a4a4467440c99e"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/desktop-runtime-helper.ts",
+      "sha256": "da5003b23b025f33ac97daf931407f532c779abe668d19b46a1e84d9cfc8946f"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/effort.ts",
+      "sha256": "a9ddc3dec623b1cbb713d72fab11faec4048a8c37d9fd9d5d20b7b0b108c93ff"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/index.ts",
+      "sha256": "4d1d931fd8e5fc76edbaaca25fd7347026a3381b6d9489bb9936508313922473"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/runtime-lifecycle.ts",
+      "sha256": "a9d459b613b12fd1b86cd374536b49bd0b3e4cef2fd823974062c41526ec4568"
+    },
+    {
+      "path": "src/providers/workbuddy-ai/turn-cancel.ts",
+      "sha256": "65ac0a65d7f887a4d895092000709daaef57b0da595dcfe59f2ae5d69fa6d658"
+    },
+    {
+      "path": "src/runtime/durable-launch.ts",
+      "sha256": "810caa9a75df05964078187b97cd68831563ab1c4a7b1a666523ad281e719418"
+    },
+    {
+      "path": "src/runtime/line-splitter.ts",
+      "sha256": "833e850f8e5cec936f29c9f0c8a5e860c3423778d258efaac75330508940b6ac"
+    },
+    {
+      "path": "src/runtime/process-darwin.ts",
+      "sha256": "7d1ca7386626913a4453bb9c48065b0241491ded450e4e7c413778057ff42fd7"
+    },
+    {
+      "path": "src/runtime/process.ts",
+      "sha256": "1f79eec3e20888b1367def7fdede397474dbdc7563bbeb8d1dfcbfa98739758a"
+    },
+    {
+      "path": "src/tests/e2e/installed-command-code-acp.e2e.ts",
+      "sha256": "a33cb90fb8abb48589a5f6a0f6182db3feed9d545e15d72fc33c9308ff803ab4"
+    },
+    {
+      "path": "src/tests/e2e/installed-command-code-real-cli.e2e.ts",
+      "sha256": "0522747246cda39436d0054055634ff1736e4d9b694d5ac130e470b1b6cc8960"
+    },
+    {
+      "path": "src/tests/e2e/job-service-real-cli.e2e.ts",
+      "sha256": "141fb8c489e28e827a0e6e93aa0333d96ce7d5559b64595afee19079ee91b79f"
+    },
+    {
+      "path": "src/tests/e2e/macos-command-code-real.e2e.ts",
+      "sha256": "08a9c35839560395ee6ace92b74ad4640005269c76473d03dfaa06e36a9df553"
+    },
+    {
+      "path": "src/tests/e2e/macos-lifecycle-probe.e2e.ts",
+      "sha256": "577abe6e52c4fbbfc5242f2d7143fa56cca6f3506c9cb4547c67a1f8be23394e"
+    },
+    {
+      "path": "src/tests/e2e/mcp-real-cli.e2e.ts",
+      "sha256": "2bd9ebe42d4c55849a597fa945762f41ecf56a2b439320c5badc1ac10042efbb"
+    },
+    {
+      "path": "src/tests/e2e/settings-real-cli.e2e.ts",
+      "sha256": "c6afd92d984f622a7277d3c099e085a264065139bb5ea19745ec92c78f6213c9"
+    },
+    {
+      "path": "src/tests/e2e/windows-host-restart-survival.e2e.ts",
+      "sha256": "8349e5006447df1436ccc4c34220d34b3b17a2afa9e8c3b6e0cc399d7c038d4b"
+    },
+    {
+      "path": "src/tests/e2e/workbuddy-desktop-real.e2e.ts",
+      "sha256": "7788335e518c6299f30c925bf326ed1fea007a7d8af2312def877772f6af22d8"
+    },
+    {
+      "path": "src/tests/fixtures/fake-codex-reviewer.cjs",
+      "sha256": "43e6fa3dfd07a55834a0f02dfb6a34c526430752132ce273deb4996473d225d1"
+    },
+    {
+      "path": "src/tests/fixtures/wb-cancel-bridge.cjs",
+      "sha256": "a9541a545fbc65ac1ce10ff80afd42a0fe2651f7183b0b621d8a276b49bc14dd"
+    },
+    {
+      "path": "src/tests/fixtures/wb-cancel-desktop.cjs",
+      "sha256": "1982b542956ac0538bcb2c273a5d82897da79882d0015de7840f3b0c57dc948e"
+    },
+    {
+      "path": "src/tests/fixtures/workbuddy-decode-records.ts",
+      "sha256": "8ea58aaabf208a987c8daefdffdedbf8737c7799f5f2584d42ceb22d7747a859"
+    },
+    {
+      "path": "src/tests/fixtures/workbuddy-terminal-records.ts",
+      "sha256": "fed10df379c7842cc839956f944c92fb358745ddbf03e3740c1b88edd6be153c"
+    },
+    {
+      "path": "src/tests/helpers/acp-workbuddy-fixture.ts",
+      "sha256": "4ec51a442189ba3d5d9fae4005e2b23f51ccc6dac5a03f0177ba5a3d9d41cf1d"
+    },
+    {
+      "path": "src/tests/helpers/cc-acp-approval-guard.ts",
+      "sha256": "76494279280fe9071b817ccb961bd2afbdd1e46134bd5a10c5fe7dfff1363513"
+    },
+    {
+      "path": "src/tests/helpers/cc-acp-fixture.ts",
+      "sha256": "6880d74195c5656d392106e0a3d8ad4499a99d22656d7d8b28c05e7081f75921"
+    },
+    {
+      "path": "src/tests/helpers/claude-inbox-receiver.ts",
+      "sha256": "5bba61d65139dc9ccdf804376ea5da21cad7afb8ab77aca7614123fc3653cced"
+    },
+    {
+      "path": "src/tests/helpers/command-code-package-fixture.ts",
+      "sha256": "c542e5ce6cae1d437650f6a64ad1e85aa28c09294b57b4f319144ed0dd1e17ea"
+    },
+    {
+      "path": "src/tests/helpers/daemon-fixture-cleanup.ts",
+      "sha256": "4a2988c671d06c0a81e5b23e65c1f930b773ce7055803153864d1c829d06ef96"
+    },
+    {
+      "path": "src/tests/helpers/dsh-session-stats.ts",
+      "sha256": "bc375067b26a094e0daf89e8d3673d040c3a614969c2449eac6c76247f5083fa"
+    },
+    {
+      "path": "src/tests/helpers/failure-evidence.ts",
+      "sha256": "cbaf1a81b60315053ec24de6720c4d8da7a3574d1f6c1efe30ffe4a8cf73c110"
+    },
+    {
+      "path": "src/tests/helpers/mcp-client.ts",
+      "sha256": "d31807155f16e4a4d44fa36280c8216d01324ee9f03c757a67b1dac38be99a81"
+    },
+    {
+      "path": "src/tests/helpers/recovery-observations.ts",
+      "sha256": "49ed6bfc60ab66bd5d4f5b8b8d5cde079160244cf88b0ff48ad53c6307bcc86b"
+    },
+    {
+      "path": "src/tests/helpers/settings-fixtures.ts",
+      "sha256": "42639482a146641ee2fc2ad9d159e33e2238ff7656bffee9eadc571c75998781"
+    },
+    {
+      "path": "src/tests/helpers/wb-cancel-desktop.ts",
+      "sha256": "f5f40e7c6809733d09b0d3001e2fab7a9948047312ca40d86312880f81e49c39"
+    },
+    {
+      "path": "src/tests/integration/accepted-model-intent.test.ts",
+      "sha256": "b62143a99a5e22d8338c4357e82a370f2008a3aaa387ed9bf0b6caaba8a0cfd5"
+    },
+    {
+      "path": "src/tests/integration/approval-notify-real.test.ts",
+      "sha256": "5b8892150f0bbcd54ed7e23a6986b15f99f0026e9064d6e7fd28c82ea0f3c5b3"
+    },
+    {
+      "path": "src/tests/integration/claude-approval-real.test.ts",
+      "sha256": "59918c793214f0a99ce62df7d4550c39348ec8cd49d9603117c5b8e8db7c3356"
+    },
+    {
+      "path": "src/tests/integration/claude-client-install.test.ts",
+      "sha256": "ce71771df4ffd35f23ef5c13b6f6ef5db4de22a160c78e510601edf5f8747669"
+    },
+    {
+      "path": "src/tests/integration/claude-lifecycle-real.test.ts",
+      "sha256": "cb17c64f7d2700b788ab2c011d8ba29a87a58430465739b19cc3da9bf808c520"
+    },
+    {
+      "path": "src/tests/integration/claude-notify-real.test.ts",
+      "sha256": "d0acb609725aef66b09e836693cbe9c7eb6aa7e24e6220869fbe562c4fc61e21"
+    },
+    {
+      "path": "src/tests/integration/claude-packaged-install.test.ts",
+      "sha256": "e4408c5a79518394d11f50e523b8b5fe4e8d96d6c6773741f240405c6f0d843a"
+    },
+    {
+      "path": "src/tests/integration/claude-recovery-real.test.ts",
+      "sha256": "839a63e339aa1145c5a12152b4c136fd737ec0b91ed7f787b88588ae96df3393"
+    },
+    {
+      "path": "src/tests/integration/codex-command.test.ts",
+      "sha256": "5c7c8475098e924cf77e1750f644f9648c5efae40b2639ccdc85ba3c47cf156a"
+    },
+    {
+      "path": "src/tests/integration/codex-run-task-driver.test.ts",
+      "sha256": "7c7fa82ad5598cfa0bbcc6084cd2b4d4b26fbaa5a2d8001ae3bf09f9ac7578e8"
+    },
+    {
+      "path": "src/tests/integration/command-code-acp-model-default-effort.test.ts",
+      "sha256": "71e05c48f67b449ef9296a348ab4d78efd6bd1805cf30ddcbb128d27ce6ed6b2"
+    },
+    {
+      "path": "src/tests/integration/command-code-acp-real.test.ts",
+      "sha256": "9d14944e31650f6b0950c9111a93ca97cf2f6c6197a27d19ced812efe893c79b"
+    },
+    {
+      "path": "src/tests/integration/daemon-broker.test.ts",
+      "sha256": "f749ecae16a5bd9e508411f8b86e0e9ed6357af31fe4df2591aa49f144ed8f98"
+    },
+    {
+      "path": "src/tests/integration/daemon-dashboard-ensure.test.ts",
+      "sha256": "dd97ee5c54940fc492ad3ed967566c38e2a77bcc05b5a10c3dc3e45ea3a74c41"
+    },
+    {
+      "path": "src/tests/integration/daemon-fixture-cleanup.test.ts",
+      "sha256": "0df466b81180c71574b97d3b2f45bbd017f38668045b22ec41b7bd8183c5d28a"
+    },
+    {
+      "path": "src/tests/integration/daemon-startup-deadline.test.ts",
+      "sha256": "19ee3ce918bbe07e76bcd6537d9e8d9c1c98e36541d82adb3938c644b0b5bf96"
+    },
+    {
+      "path": "src/tests/integration/dashboard-build-aware.test.ts",
+      "sha256": "3fc2b669b72293944bdab33332679ec4d52c6da795e20f6ac087e031bdb9cef6"
+    },
+    {
+      "path": "src/tests/integration/dashboard-cli.test.ts",
+      "sha256": "6cb15ff80f7280b70c3e61a166d9a7ecafca5726b5778901c58479c8b711f3c3"
+    },
+    {
+      "path": "src/tests/integration/dashboard-on-dispatch-mcp.test.ts",
+      "sha256": "255b661738bf32f771793cd7099c658f4336881c5da393792040ee1777f48c98"
+    },
+    {
+      "path": "src/tests/integration/failure-evidence-boundary-child.ts",
+      "sha256": "667a92fbabddfaf194d49814cedb48577eb325f0d496ccc9749fcfdfac9ee549"
+    },
+    {
+      "path": "src/tests/integration/failure-evidence.test.ts",
+      "sha256": "3b2b70d7feb55509a7b21e0468a301ef51df7702e0a754ce4613b5735904ca23"
+    },
+    {
+      "path": "src/tests/integration/hub-approval.test.ts",
+      "sha256": "82525fdb4c47f4b642fe9a4296a0d9aaf344bcb28a27244044a35fd18dbb8825"
+    },
+    {
+      "path": "src/tests/integration/hub-endpoint-ownership.test.ts",
+      "sha256": "5d0267468a8ed112dfde97d5955ae18cbdbc7a7426e6a5d5fadeebb4859657a9"
+    },
+    {
+      "path": "src/tests/integration/hub-http-mcp.test.ts",
+      "sha256": "d6739e9e6d8c852fbbc1fa86ad9017e6d724ca9aa036201089675e922a8e02fc"
+    },
+    {
+      "path": "src/tests/integration/hub-ui-browser.test.ts",
+      "sha256": "5159e33c4dfc887e106d9a4cbe28ecbd335756197f5e416bfe2564ee524791c8"
+    },
+    {
+      "path": "src/tests/integration/hub-ui-coherence.test.ts",
+      "sha256": "9c0cf52e8d543b17511f6d793f3de445d688b89c807603e65e54606a5b413a51"
+    },
+    {
+      "path": "src/tests/integration/hub-workbuddy-activity.test.ts",
+      "sha256": "64d6ddcbd25457076b301fd57cd1294fe263706c2f05cee9a806dbfdb27c1a39"
+    },
+    {
+      "path": "src/tests/integration/in-flight-usage-persistence.test.ts",
+      "sha256": "846553d42fc7c447a71310431f1e03a0ad59d74143fa7970888afc7a28f26f6c"
+    },
+    {
+      "path": "src/tests/integration/install-autostart.test.ts",
+      "sha256": "b7077189ca80fbad27698a2106b18b3c63d6c30613f13c7234232b83b6e04d62"
+    },
+    {
+      "path": "src/tests/integration/install-cli.test.ts",
+      "sha256": "79f6b59413c7d52ddb037ed6585d48dc61ce2fc10f99a099b133fff41dbbad04"
+    },
+    {
+      "path": "src/tests/integration/job-harness.test.ts",
+      "sha256": "017fc2428fbb5d9cf04a748ecddb6056e61bf4254393cc24bc3a7b72c825bb59"
+    },
+    {
+      "path": "src/tests/integration/macos-dashboard-lifecycle.test.ts",
+      "sha256": "b525a4e1ec50414d4b34419462e575e8bcd16f46a1a78af7b1183fbb98e7a008"
+    },
+    {
+      "path": "src/tests/integration/macos-data-root.test.ts",
+      "sha256": "27bc2d2d4a92b6eb10b115608a103407d4fc8fe629e17b2800dfb63fd6128a4a"
+    },
+    {
+      "path": "src/tests/integration/macos-process-runtime.test.ts",
+      "sha256": "f1ff79fa2bf9a3ba017a4102aa636cdc420fd81ba0f2a230a1a150427143c6e8"
+    },
+    {
+      "path": "src/tests/integration/mcp-callback.test.ts",
+      "sha256": "e9f0e34118fa67fffe49f0269f1d9daa193b988c3c7414167152c163bd23521b"
+    },
+    {
+      "path": "src/tests/integration/mcp-dashboard-hint.test.ts",
+      "sha256": "82962351853f4d1dac49dbfb5ea8d5bedd929cb8ffd8631509bd8c70236c38e1"
+    },
+    {
+      "path": "src/tests/integration/mcp-notify-race.test.ts",
+      "sha256": "87ed3a4de988adec5587c0996c9ca3ac23dbaf556477b834468cda528a150a95"
+    },
+    {
+      "path": "src/tests/integration/mcp-reconcile-notify.test.ts",
+      "sha256": "a081befbbef58155c1d1b4b3785bc68f38eb554ad214edd1b724273dd2a86fbb"
+    },
+    {
+      "path": "src/tests/integration/mcp-stdio.test.ts",
+      "sha256": "07e6cc3462a662d696d617833a893545ae1c5aad55f96e99167bfb08bc0f2205"
+    },
+    {
+      "path": "src/tests/integration/plugin-mcp.test.ts",
+      "sha256": "df16c46b8a58458331e17895211e606e1e6d94448f404bc85f2fc63d0af0eb6d"
+    },
+    {
+      "path": "src/tests/integration/process-tree-cancel.test.ts",
+      "sha256": "78858768889c57150bfe5943bfc2bc2d706845c4989bac4e5b31ba00b653ffe2"
+    },
+    {
+      "path": "src/tests/integration/rate-limit-fallback-mcp.test.ts",
+      "sha256": "b6b27cf344ce5090d2dfbcf59ff45315395abbfa2bad01bb7b46c9999f616f39"
+    },
+    {
+      "path": "src/tests/integration/release-candidate.test.ts",
+      "sha256": "f3bb8dca41588621f86e52a4d62c76fae837f27366516e35f57692ae87073092"
+    },
+    {
+      "path": "src/tests/integration/schema-rollback-mcp.test.ts",
+      "sha256": "75cf60783b518228f446e393f2893616a6a94d737790ee7558cab3a405d1eaf5"
+    },
+    {
+      "path": "src/tests/integration/settings-fresh-hub.test.ts",
+      "sha256": "921a579842222efeaf6b30900bce68cc5537fb8427b6dc640f056f754bec3b66"
+    },
+    {
+      "path": "src/tests/integration/settings-mcp.test.ts",
+      "sha256": "6a64e7cc4b7424272b1ded727f73e4d3651476e563a4fe95b6078c0fc64771a8"
+    },
+    {
+      "path": "src/tests/integration/wb-cancel-owned-tool.test.ts",
+      "sha256": "4d27fc5a06fd6c3bf806c50af1ed7a779a58c7957a5461cfce3c7ff6e44e1b55"
+    },
+    {
+      "path": "src/tests/integration/wb-runtime-resources.test.ts",
+      "sha256": "c1447e511f68cc35c8789a4da9916bf15af13bab161073164ea83b8c2ccd2309"
+    },
+    {
+      "path": "src/tests/integration/windows-shim.test.ts",
+      "sha256": "4e9c613183ffe697a6771b42ab56dcdffec873fef7f7eeaf278bc48234c0eed4"
+    },
+    {
+      "path": "src/tests/integration/workbuddy-quota-fallback-mcp.test.ts",
+      "sha256": "ab52984f13b1a4d36ffdcc5bf00a28843c1e41880d78425314057feff1e0bde4"
+    },
+    {
+      "path": "src/tests/integration/workspace-busy-daemon.test.ts",
+      "sha256": "b11b7eb39361891881bbc72362261633e15c96a169781685b30a2c03aeb1cd0e"
+    },
+    {
+      "path": "src/tests/integration/workspace-busy-mcp.test.ts",
+      "sha256": "3bd234fc03976d68ea4b094e7d26bdacd9940fa29277b975f9efe99675ac1113"
+    },
+    {
+      "path": "src/tests/unit/approval-notify.test.ts",
+      "sha256": "2e898cd6a41e1f5d33c30c3cdf3aa912f7455fa1c41f9dab29dda689595e3dd6"
+    },
+    {
+      "path": "src/tests/unit/argv.test.ts",
+      "sha256": "b3a213abdf6834cf1a87d1d187fb6156bd04763eeda94d1f083874d2c260b0a6"
+    },
+    {
+      "path": "src/tests/unit/autostart.test.ts",
+      "sha256": "630157760e8f6d33f975527fb06f34e93b75acdbb55ad26c13bf430e4e25755f"
+    },
+    {
+      "path": "src/tests/unit/capability.test.ts",
+      "sha256": "31538ec5cfad57076dab96a44870ff4059d3d1ccb16be0577ce520273fe52c8c"
+    },
+    {
+      "path": "src/tests/unit/catalog.test.ts",
+      "sha256": "203d748b761cf62cf8a0c6568e5525882cefcf22abaf080a28f9a39ae2f39083"
+    },
+    {
+      "path": "src/tests/unit/cc-acp-approval-guard.test.ts",
+      "sha256": "f10544bf06f4ab0bf130bc5fa030380051485c76b9160d10e27cb4c7e91eae0c"
+    },
+    {
+      "path": "src/tests/unit/claude-binding.test.ts",
+      "sha256": "a5d05f4b05a1e1132cec838a20c9756ba5f59f1e45b4d5d41962b36ac95adacb"
+    },
+    {
+      "path": "src/tests/unit/claude-hook.test.ts",
+      "sha256": "650bda0098d9fa8bc951ec768197ab5e1ea5b147e6f2452e26c3edd813ae1c60"
+    },
+    {
+      "path": "src/tests/unit/claude-lifecycle.test.ts",
+      "sha256": "e3efbda22eeaecd88d853e18a35c60f77dc87c8aeaaf46711de1c2301aea3bfc"
+    },
+    {
+      "path": "src/tests/unit/claude-notify-target.test.ts",
+      "sha256": "570365ed5fe6ee51f9e47f567de96daf61708dfdb0308293d18449c66b7a78c6"
+    },
+    {
+      "path": "src/tests/unit/claude-transport.test.ts",
+      "sha256": "4e947ad571a745e9d1dc797e40c27a28079d9ab9208fb99f7522962bacc8a070"
+    },
+    {
+      "path": "src/tests/unit/command-code-acp-bridge.test.ts",
+      "sha256": "05190aee44a610ac5f37c2426256c0a4c80ad3b60f8d130190a005983f8c90f9"
+    },
+    {
+      "path": "src/tests/unit/command-code-acp-client.test.ts",
+      "sha256": "5edc62217352a713b426a530eb5fbee9ec93678e631f190b0210d0286f4223b4"
+    },
+    {
+      "path": "src/tests/unit/command-code-acp-wire.test.ts",
+      "sha256": "88139d31b8ab28aaa1e4c318d6ead271d129957e21a5bed55ee2ab9fd2503e49"
+    },
+    {
+      "path": "src/tests/unit/command-code-local-catalog.test.ts",
+      "sha256": "002937f5be7df9e98382463fc452108683f5022da43d1b4904a781c59b5363f0"
+    },
+    {
+      "path": "src/tests/unit/config-schema.test.ts",
+      "sha256": "020e378663711bdb3d1da331d2d6482a5d1296605fcb792dcba8e9882ff635be"
+    },
+    {
+      "path": "src/tests/unit/config-select-boundary.test.ts",
+      "sha256": "6dea0386b92f56968d00536cb9f88c04c599486e7335896ef4a95469dbae28ff"
+    },
+    {
+      "path": "src/tests/unit/config-select.test.ts",
+      "sha256": "5c2f4b12bd20143d2e579f8c5f8ec91e3b3ac1f5a71ecbe3b15e9bf587f40e61"
+    },
+    {
+      "path": "src/tests/unit/config-settings.test.ts",
+      "sha256": "e47bd07df985aaa27bba152a220f86efca22924786fa516bd2dd4087ddc523f8"
+    },
+    {
+      "path": "src/tests/unit/daemon-dashboard-ensure.test.ts",
+      "sha256": "3907933f0ed8df9383a4ce727f7871deec71025e62cb7f372eb47786612511d6"
+    },
+    {
+      "path": "src/tests/unit/dashboard-ensure.test.ts",
+      "sha256": "7f9897275c42c29a0456ea47be6dca68479fce8558ec5ac2935a3048e2c93f80"
+    },
+    {
+      "path": "src/tests/unit/dashboard-hint.test.ts",
+      "sha256": "f98eacd23ca169089c6f35c19d4424d3168a3b2c3fde96748a26890680222d5d"
+    },
+    {
+      "path": "src/tests/unit/dashboard-launcher.test.ts",
+      "sha256": "9614d7943524a4fb10a7e450cf3b5a60215149d8d3a9ff8f864991a9899e0506"
+    },
+    {
+      "path": "src/tests/unit/decode-dsh.test.ts",
+      "sha256": "bd7c1e46132befb7717f80c35769583659ac6d644cf330f445e988a27d388157"
+    },
+    {
+      "path": "src/tests/unit/discovery.test.ts",
+      "sha256": "33b9b8d28ef10dfdb5eeb55f6fc9324d08e3917c47d575b6d59249856119a68e"
+    },
+    {
+      "path": "src/tests/unit/durable-launch.test.ts",
+      "sha256": "78d6ce2c86e50748ad8f0f7e352a79f0652ae8745626673cba14f4009ffa8ea4"
+    },
+    {
+      "path": "src/tests/unit/effort-provenance.test.ts",
+      "sha256": "6f7c5d43301334eb387b3df8e647b60e7e22d4b4e31e3a87ad9fcbfa2f7e16c6"
+    },
+    {
+      "path": "src/tests/unit/exit.test.ts",
+      "sha256": "607e71607a3bce4a4b1ff1a48dae9cc409c9f3904b8c78259303861ff777f756"
+    },
+    {
+      "path": "src/tests/unit/hub-endpoint.test.ts",
+      "sha256": "8e5fc465a35a8acffb7e693965aae4fdb0fa48b566a806ff707c0493304dc52c"
+    },
+    {
+      "path": "src/tests/unit/hub-identity.test.ts",
+      "sha256": "2c91ee2bb01f435f3569477f735a01ba158ac9984669831a16bef16ae2f127f0"
+    },
+    {
+      "path": "src/tests/unit/install-doctor-data-root.test.ts",
+      "sha256": "ea3401b57c7c8ace234eee99c0223cce9a1ea20dc4f04af04f8746afa2430d2e"
+    },
+    {
+      "path": "src/tests/unit/jobs-generation.test.ts",
+      "sha256": "1904d59e5763d115970f728fc07180d4424dab4523b66b76efe6969f99aa8d97"
+    },
+    {
+      "path": "src/tests/unit/jobs-reconcile.test.ts",
+      "sha256": "46bd7ae4c3117e60634ad702b15a3c2cb46ae1ef008089b6a60d9e34f5bb21c6"
+    },
+    {
+      "path": "src/tests/unit/jobs-runner.test.ts",
+      "sha256": "5100dc42842b47f83e9440c1d6ff29712e2daadb32431a754e7896dc6900a2c9"
+    },
+    {
+      "path": "src/tests/unit/jobs-service.test.ts",
+      "sha256": "d7260f32a7d9a85fe55bc8c336871732606d43290beef49f6f23a9fd2e5a8903"
+    },
+    {
+      "path": "src/tests/unit/jobs-store.test.ts",
+      "sha256": "c86e016a13a770b947c52b460c4dba2ec935c393f2fb0772be43c935bd3443d1"
+    },
+    {
+      "path": "src/tests/unit/mcp-notify.test.ts",
+      "sha256": "b1d766a527d10d760efa40082ed235053e8f63ee6fd457088a0085f8cf2a69b7"
+    },
+    {
+      "path": "src/tests/unit/mcp-view.test.ts",
+      "sha256": "f6d9f9a5bfc53969091c9c16bd08642bb52948790c1d9d073a81578a54068222"
+    },
+    {
+      "path": "src/tests/unit/node-runtime.test.ts",
+      "sha256": "5959b907d53bd65301101217a12a5aff2b2db5dacef02046b234694f89bcb3a8"
+    },
+    {
+      "path": "src/tests/unit/notification-maintenance.test.ts",
+      "sha256": "73899aee005194624be555b2b3811783031def316ee24b810833eac9ede03300"
+    },
+    {
+      "path": "src/tests/unit/notification-recovery.test.ts",
+      "sha256": "09ae57e0077d7635fd7e99ef86fa5e0a2d2812d0f75518eb179ed61970d056fc"
+    },
+    {
+      "path": "src/tests/unit/one-shot-verdict.test.ts",
+      "sha256": "9af952097402f026196b9d8383b8632b57457f62fd6949e2f69163487367de95"
+    },
+    {
+      "path": "src/tests/unit/process-darwin.test.ts",
+      "sha256": "de079524c69fadb56dc4a3c707e5c2a0298db0c7b0cb78f2fd4473dd1412b64a"
+    },
+    {
+      "path": "src/tests/unit/run-isolation.test.ts",
+      "sha256": "a8d182218a7b15943b677b06a55e39f9830569212765c6bb52b29d13f5b7709c"
+    },
+    {
+      "path": "src/tests/unit/settings-reads.test.ts",
+      "sha256": "b616f4eadb2a107cd06225763baf4f6d14334392cd21a39933112790b85e4e59"
+    },
+    {
+      "path": "src/tests/unit/spawn-plan.test.ts",
+      "sha256": "2b99109692f213ccdcf7fae15489fd5c33a37878b2fcf5e9d2d324c1c727f73c"
+    },
+    {
+      "path": "src/tests/unit/stream.test.ts",
+      "sha256": "d710d6a84628ed621304d4f16ffc562a6f018ef2a09f3ff5c6b5f72b86c90ef1"
+    },
+    {
+      "path": "src/tests/unit/terminal-workspace-recovery.test.ts",
+      "sha256": "23f93432125233352a928f873e9a48c1534867bf360d007d4ece57ce7f826b7a"
+    },
+    {
+      "path": "src/tests/unit/ui-duration.test.ts",
+      "sha256": "d6ac074d95243dd427d6ce666dc57f197378e8967557715f3f3d888bfbbc6f73"
+    },
+    {
+      "path": "src/tests/unit/wb-cancel-route.test.ts",
+      "sha256": "6b7d26a6274afa572a790c6cdf7d97bed8fdf42e0279a66e120c673a37e3c6bb"
+    },
+    {
+      "path": "src/tests/unit/wb-runtime-lifecycle.test.ts",
+      "sha256": "b7a6b6f6c272c4efc2d3773244483b47879f65233d58a3a8e560c64e5500718c"
+    },
+    {
+      "path": "src/tests/unit/windows-hidden-spawn-guard.test.ts",
+      "sha256": "134c5540ae1e9ea632c0d4421e4ef021e5a1a32648da6ea1c65496884a7ff43b"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-acp-normalizer.test.ts",
+      "sha256": "52a26b12ae9da82fda3e5a8b292f49a30ff5dfb5eb6367cb4482f147a57b0377"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-ai-config.test.ts",
+      "sha256": "a8d94643bafc51b06fee5e16ff22d10840e9ee6240f1318c7319bcd25af0f5e6"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-ai-provider.test.ts",
+      "sha256": "9180fa6c14e9454afe214c9adf4d16ff1bc6ca26d9217713134f2730b6ac7cfb"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-approval-channel.test.ts",
+      "sha256": "7c225ddfd8cf5792870389ad106eac55a66728e86b8cb72f1a2e535b676e3a1f"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-desktop-bridge.test.ts",
+      "sha256": "c910efbb4f937f181c137d0d95e57302da3599ccac2b20103a7b52140993c1a2"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-model-effort.test.ts",
+      "sha256": "4294503a19584b3f823fdda709accc4ee70f337492db7aa8db916d886d5e03b8"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-terminal-result.test.ts",
+      "sha256": "903280f1b3824ee04a255072aa47d3ee0bc65429ef9ce1db95027cde2587aabd"
+    },
+    {
+      "path": "src/tests/unit/workspace-guard.test.ts",
+      "sha256": "a629d2af8aee4ed633298b462cdc63a6bf663acc4937ed4c52a7ab4bc5b6a092"
+    },
+    {
+      "path": "src/ui/client.ts",
+      "sha256": "20f49ac1f76472ee592c6e5ee3ece8f4ae18822d0f720a86666965ce09bf1685"
+    },
+    {
+      "path": "src/ui/page.ts",
+      "sha256": "e4a0de98d8e86f9f120dfc0c21ce8053e69acc88817075c5a64df38d874a28e6"
+    },
+    {
+      "path": "tsconfig.browser.json",
+      "sha256": "15fd0064238767fef72f814759981c3bfb556cf9d18a2f314e3205ff0cf1757f"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "196549853b58a12407eb034f40ae1d1ac64c3c0d816825c1972a3effd9e0148b"
+    }
+  ]
+}

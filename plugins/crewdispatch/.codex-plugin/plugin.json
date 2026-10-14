@@ -1,0 +1,19 @@
+{
+  "name": "crewdispatch",
+  "version": "0.1.0",
+  "description": "CrewDispatch: dispatch and manage durable long-running coding-agent jobs over a local stdio MCP server.",
+  "author": {
+    "name": "CrewDispatch"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "CrewDispatch",
+    "shortDescription": "Dispatch durable long-running coding jobs.",
+    "longDescription": "CrewDispatch runs Command Code or WorkBuddy AI coding tasks as durable local jobs and attempts one short terminal notification per job generation. Each job runs in a detached local worker, survives a closed MCP request or an ended client turn, and is cancelled only on an explicit request.",
+    "developerName": "CrewDispatch",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Dispatch a coding task with CrewDispatch."
+  },
+  "mcpServers": "./.mcp.json"
+}
