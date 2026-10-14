@@ -75,6 +75,7 @@ jobs:
           if (Test-Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\CrewDispatch') { throw 'Installed Apps registration survived uninstall' }
           if (Test-Path $target) { throw 'fresh install target survived uninstall' }
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: CrewDispatch-0.1.2-windows-installer-ci
           path: |

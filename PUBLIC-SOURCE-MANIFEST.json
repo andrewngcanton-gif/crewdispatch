@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "22e790e52aa03e0995c31b601babfc49a1f4244b",
+  "sourceCommit": "60b2d72f8d68e01fed48a4b7de05c653fb4839fa",
   "sourceDirty": false,
   "files": [
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": ".github/workflows/installer-ci.yml",
-      "sha256": "b32b2fbc54b22f04a10e74024725341303441063a4d84f725a9a31d1e8c56d66"
+      "sha256": "f106c5629a97e577105b511e5ac1d86bb655fd923063ac307f5ed339c21faa8b"
     },
     {
       "path": ".gitignore",
@@ -161,7 +161,7 @@
     },
     {
       "path": "scripts/test-windows-installer-ui.ps1",
-      "sha256": "2fccb0c873c62e3aa002820f4055b91b1fe12b6991120fa6ed72f64ba25a58c7"
+      "sha256": "3051af283c5e2aef42e5cc030e93110dd64c6a25c46c0a8f9f6e5ea3ee057b50"
     },
     {
       "path": "scripts/uninstall-codex-command.cjs",

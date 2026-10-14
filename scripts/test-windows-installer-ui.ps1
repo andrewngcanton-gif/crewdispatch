@@ -40,14 +40,6 @@ try {
     if (-not [string]::IsNullOrWhiteSpace($name)) { $names += $name }
   }
 
-  $expectedWelcome = "Welcome to the CrewDispatch $Version Setup Wizard"
-  if ($names -notcontains $expectedWelcome) {
-    throw "Welcome text is missing from the visible installer UI. Expected '$expectedWelcome'. Visible names: $($names -join ' | ')"
-  }
-  if (-not ($names | Where-Object { $_ -match '^Next\s*>?$' })) {
-    throw "Next button is missing from the visible installer UI. Visible names: $($names -join ' | ')"
-  }
-
   if ($Screenshot) {
     try {
       Add-Type -AssemblyName System.Drawing
@@ -66,8 +58,20 @@ try {
         $bitmap.Dispose()
       }
     } catch {
-      Write-Warning "Welcome UI passed, but screenshot capture was unavailable: $($_.Exception.Message)"
+      Write-Warning "Screenshot capture was unavailable: $($_.Exception.Message)"
     }
+  }
+
+  $expectedWelcome = "Welcome to CrewDispatch $Version Setup"
+  $expectedBody = "Setup will guide you through the installation of CrewDispatch $Version."
+  if ($names -notcontains $expectedWelcome) {
+    throw "Welcome heading is missing from the visible installer UI. Expected '$expectedWelcome'. Visible names: $($names -join ' | ')"
+  }
+  if (-not ($names | Where-Object { $_.StartsWith($expectedBody) })) {
+    throw "Welcome body is missing from the visible installer UI. Expected prefix '$expectedBody'. Visible names: $($names -join ' | ')"
+  }
+  if (-not ($names | Where-Object { $_ -match '^Next\s*>?$' })) {
+    throw "Next button is missing from the visible installer UI. Visible names: $($names -join ' | ')"
   }
 
   Write-Host "Visible installer welcome page PASS: $expectedWelcome"
