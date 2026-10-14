@@ -185,7 +185,14 @@ jobs:
           test "$(uname -m)" = '${{ matrix.expected_uname }}'
           NODE_DIR="$(dirname "$(command -v node)")"
           printf 'export PATH="%s:$PATH"\n' "$NODE_DIR" >> "$HOME/.zprofile"
-          sudo installer -pkg installer-out/CrewDispatch-0.1.1.pkg -target /
+          ORIGINAL_CONSOLE_OWNER="$(stat -f '%Su:%Sg' /dev/console)"
+          sudo chown "$USER:$(id -gn)" /dev/console
+          restore_console() { sudo chown "$ORIGINAL_CONSOLE_OWNER" /dev/console || true; }
+          trap restore_console EXIT
+          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.1.pkg -target /; then
+            sudo tail -n 200 /var/log/install.log || true
+            exit 1
+          fi
           TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
           test -f "$TARGET/.jobquay-install.json"
           test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.1'
