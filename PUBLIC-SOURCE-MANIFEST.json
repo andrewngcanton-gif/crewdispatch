@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "60b2d72f8d68e01fed48a4b7de05c653fb4839fa",
+  "sourceCommit": "b4c677b6e1dea51a2d188e55a2101d9772de2c35",
   "sourceDirty": false,
   "files": [
     {
@@ -25,7 +25,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "2caa7d5ac4c7db7316ef848bbfd586c52194366d4752c6303f5ef50777616201"
+      "sha256": "c767a882e81200bfbab2c04a5f14156a5ad5e6fa1c01b09dfeb5c0879446b45a"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -37,7 +37,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "43d3576af0c5bd9e097892baa3a1698ecd4ca17d2971f4f2e6d1f563cab11494"
+      "sha256": "5dac0e9ad657809995256a1a2f52c4fd93bd911a72d64eef2e856058fa7c3b91"
     },
     {
       "path": "THIRD_PARTY_NOTICES",
@@ -53,7 +53,7 @@
     },
     {
       "path": "docs/getting-started.md",
-      "sha256": "dfc2da4ae1622fa33bae3b729487a70f8bdbd003db2a015552a370b469d167f0"
+      "sha256": "7d95c207a5382dbae2e3b6036caae3e9ff105499012b640c703d6b32c69fd006"
     },
     {
       "path": "docs/uninstall.md",

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.2 — in validation
+## 0.1.2 — 2026-10-14
 
 Installer UI patch release.
 

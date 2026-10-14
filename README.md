@@ -34,6 +34,8 @@ Download the installer for your platform and open it. The installer checks the N
 
 Windows adds Start Menu entries for the Dashboard and uninstaller. macOS installs the runtime in the current user's Application Support directory and adds Dashboard / Uninstaller launchers under `~/Applications`.
 
+The Windows installer is currently unsigned, so Microsoft Defender SmartScreen may show **Windows protected your PC** on first launch. If you downloaded it from the official GitHub Release, use **More info → Run anyway** after verifying the published SHA-256 checksum.
+
 The macOS package is unsigned and not notarized; first install may require **Open Anyway** in System Settings → Privacy & Security.
 
 Advanced users can still use the managed CLI installer from a source/release payload.
