@@ -2,7 +2,7 @@ name: Installer CI
 
 on:
   push:
-    branches: [installer-0.1.4]
+    branches: [installer-0.1.5]
   workflow_dispatch:
 
 permissions:
@@ -45,27 +45,80 @@ jobs:
           if (-not (Test-Path $makensis)) { throw 'makensis.exe not found after NSIS install' }
           $env:MAKENSIS = $makensis
           New-Item -ItemType Directory -Force installer-out | Out-Null
-          node scripts/build-windows-installer.cjs --payload-dir $env:CREWDISPATCH_WINDOWS_UNPACKED --output installer-out/CrewDispatch-Setup-0.1.4.exe | Tee-Object -FilePath installer-out/windows-installer.json
+          node scripts/build-windows-installer.cjs --payload-dir $env:CREWDISPATCH_WINDOWS_UNPACKED --output installer-out/CrewDispatch-Setup-0.1.5.exe | Tee-Object -FilePath installer-out/windows-installer.json
           New-Item -ItemType Directory -Force installer-out/candidate | Out-Null
           Copy-Item (Join-Path $env:CREWDISPATCH_WINDOWS_CANDIDATE '*') installer-out/candidate -Force
-          if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.4.exe)) { throw 'setup EXE missing' }
+          if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.5.exe)) { throw 'setup EXE missing' }
       - name: Verify visible Windows welcome page
         shell: pwsh
         run: |
           ./scripts/test-windows-installer-ui.ps1 `
-            -Setup installer-out/CrewDispatch-Setup-0.1.4.exe `
-            -Version 0.1.4 `
+            -Setup installer-out/CrewDispatch-Setup-0.1.5.exe `
+            -Version 0.1.5 `
             -Screenshot installer-out/windows-welcome.png
+      - name: Stage Codex Desktop CLI ownership fixture
+        shell: pwsh
+        run: |
+          $fakeDir = Join-Path $env:RUNNER_TEMP 'crewdispatch-fake-codex'
+          New-Item -ItemType Directory -Force $fakeDir | Out-Null
+          $state = Join-Path $fakeDir 'state.json'
+          '{"marketplace":false,"plugin":false,"target":null}' | Set-Content -Encoding utf8 $state
+          @'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const args = process.argv.slice(2);
+          const statePath = process.env.CREWDISPATCH_FAKE_CODEX_STATE;
+          let state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+          const save = () => fs.writeFileSync(statePath, JSON.stringify(state));
+          const json = (value) => process.stdout.write(`${JSON.stringify(value)}\n`);
+          const isMarketplaceAdd = args[0] === 'plugin' && args[1] === 'marketplace' && args[2] === 'add';
+          const isMarketplaceList = args[0] === 'plugin' && args[1] === 'marketplace' && args[2] === 'list';
+          const isMarketplaceRemove = args[0] === 'plugin' && args[1] === 'marketplace' && args[2] === 'remove';
+          const isPluginAdd = args[0] === 'plugin' && args[1] === 'add';
+          const isPluginList = args[0] === 'plugin' && args[1] === 'list';
+          const isPluginRemove = args[0] === 'plugin' && args[1] === 'remove';
+          if (isMarketplaceAdd) {
+            state.target = args[3]; state.marketplace = true; save(); json({ marketplaceName: 'crewdispatch-local', installedRoot: state.target });
+          } else if (isPluginAdd) {
+            state.plugin = true; save(); json({ pluginId: 'crewdispatch@crewdispatch-local' });
+          } else if (isPluginList) {
+            const manifest = state.target && path.join(state.target, '.agents', 'plugins', 'marketplace.json');
+            if (!state.marketplace || !manifest || !fs.existsSync(manifest)) {
+              console.error(`Error: failed to load configured marketplace snapshot(s): crewdispatch-local at ${state.target}`); process.exit(1);
+            }
+            const source = `\\\\?\\${state.target}`;
+            json({ installed: state.plugin ? [{ pluginId: 'crewdispatch@crewdispatch-local', marketplaceSource: { sourceType: 'local', source } }] : [], available: [] });
+          } else if (isPluginRemove) {
+            state.plugin = false; save(); json({ pluginId: 'crewdispatch@crewdispatch-local' });
+          } else if (isMarketplaceList) {
+            const manifest = state.target && path.join(state.target, '.agents', 'plugins', 'marketplace.json');
+            if (!state.marketplace || !manifest || !fs.existsSync(manifest)) {
+              console.error(`Error: failed to load marketplace(s): crewdispatch-local at ${state.target}`); process.exit(1);
+            }
+            const root = `\\\\?\\${state.target}`;
+            json({ marketplaces: [{ name: 'crewdispatch-local', root }] });
+          } else if (isMarketplaceRemove) {
+            state.marketplace = false; save(); json({ marketplaceName: 'crewdispatch-local', installedRoot: null });
+          } else {
+            console.error(`unexpected fake Codex argv: ${args.join(' ')}`); process.exit(2);
+          }
+          '@ | Set-Content -Encoding utf8 (Join-Path $fakeDir 'fake-codex.cjs')
+          @'
+          @echo off
+          node "%~dp0fake-codex.cjs" %*
+          '@ | Set-Content -Encoding ascii (Join-Path $fakeDir 'codex.cmd')
+          "CODEX_CLI_PATH=$(Join-Path $fakeDir 'codex.cmd')" >> $env:GITHUB_ENV
+          "CREWDISPATCH_FAKE_CODEX_STATE=$state" >> $env:GITHUB_ENV
       - name: Silent install and uninstall lifecycle
         shell: pwsh
         run: |
-          $setup = (Resolve-Path installer-out/CrewDispatch-Setup-0.1.4.exe).Path
+          $setup = (Resolve-Path installer-out/CrewDispatch-Setup-0.1.5.exe).Path
           $install = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "setup failed: $($install.ExitCode)" }
           $target = Join-Path $env:LOCALAPPDATA 'Programs\CrewDispatch'
           if (-not (Test-Path (Join-Path $target '.jobquay-install.json'))) { throw 'managed install marker missing' }
           $pkg = Get-Content (Join-Path $target 'package.json') -Raw | ConvertFrom-Json
-          if ($pkg.version -ne '0.1.4') { throw "unexpected installed version $($pkg.version)" }
+          if ($pkg.version -ne '0.1.5') { throw "unexpected installed version $($pkg.version)" }
           $codexPrompt = Join-Path $HOME '.codex\prompts\crewdispatch.md'
           $codexManifest = Join-Path $HOME '.codex\crewdispatch-install.json'
           $claudeCommand = Join-Path $HOME '.claude\commands\crewdispatch.md'
@@ -74,6 +127,8 @@ jobs:
           foreach ($file in @($codexPrompt, $codexManifest, $claudeCommand, $claudeSkill, $claudeManifest)) {
             if (-not (Test-Path $file)) { throw "caller integration missing: $file" }
           }
+          $fakeCodexAfterInstall = Get-Content $env:CREWDISPATCH_FAKE_CODEX_STATE -Raw | ConvertFrom-Json
+          if (-not $fakeCodexAfterInstall.marketplace -or -not $fakeCodexAfterInstall.plugin) { throw 'Codex plugin/marketplace fixture was not installed' }
           $claudeConfig = Join-Path $HOME '.claude.json'
           if (-not (Test-Path $claudeConfig)) { throw 'Claude user MCP config missing' }
           $claudeJson = Get-Content $claudeConfig -Raw | ConvertFrom-Json
@@ -93,6 +148,8 @@ jobs:
           foreach ($file in @($codexPrompt, $codexManifest, $claudeCommand, $claudeSkill, $claudeManifest)) {
             if (Test-Path $file) { throw "caller integration survived uninstall: $file" }
           }
+          $fakeCodexAfterUninstall = Get-Content $env:CREWDISPATCH_FAKE_CODEX_STATE -Raw | ConvertFrom-Json
+          if ($fakeCodexAfterUninstall.plugin -or $fakeCodexAfterUninstall.marketplace) { throw 'Codex plugin/marketplace registration survived uninstall' }
           if (Test-Path $claudeConfig) {
             $claudeJsonAfter = Get-Content $claudeConfig -Raw | ConvertFrom-Json
             if ($claudeJsonAfter.mcpServers.crewdispatch) { throw 'Claude CrewDispatch MCP registration survived uninstall' }
@@ -104,9 +161,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: CrewDispatch-0.1.4-windows-installer-ci
+          name: CrewDispatch-0.1.5-windows-installer-ci
           path: |
-            installer-out/CrewDispatch-Setup-0.1.4.exe
+            installer-out/CrewDispatch-Setup-0.1.5.exe
             installer-out/windows-installer.json
             installer-out/windows-welcome.png
             installer-out/candidate/*.zip
@@ -154,7 +211,7 @@ jobs:
           cp "$CANDIDATE"/* candidate-out/
       - uses: actions/upload-artifact@v4
         with:
-          name: CrewDispatch-0.1.4-macos-payload-${{ matrix.artifact_arch }}
+          name: CrewDispatch-0.1.5-macos-payload-${{ matrix.artifact_arch }}
           path: |
             candidate-out/*.zip
             candidate-out/*.json
@@ -170,29 +227,29 @@ jobs:
           node-version: '22.23.3'
       - uses: actions/download-artifact@v4
         with:
-          pattern: CrewDispatch-0.1.4-macos-payload-*
+          pattern: CrewDispatch-0.1.5-macos-payload-*
           path: candidates
           merge-multiple: true
       - name: Build dual-architecture package
         shell: bash
         run: |
           set -euo pipefail
-          ARM="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.4-darwin-arm64-*.zip' -print -quit)"
-          X64="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.4-darwin-x64-*.zip' -print -quit)"
+          ARM="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.5-darwin-arm64-*.zip' -print -quit)"
+          X64="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.5-darwin-x64-*.zip' -print -quit)"
           test -n "$ARM"
           test -n "$X64"
           mkdir -p installer-out
-          node scripts/build-macos-installer.cjs --arm64-archive "$ARM" --x64-archive "$X64" --output installer-out/CrewDispatch-0.1.4.pkg | tee installer-out/macos-installer.json
+          node scripts/build-macos-installer.cjs --arm64-archive "$ARM" --x64-archive "$X64" --output installer-out/CrewDispatch-0.1.5.pkg | tee installer-out/macos-installer.json
           /bin/zsh -n installers/macos/postinstall
-          pkgutil --expand installer-out/CrewDispatch-0.1.4.pkg installer-out/expanded
+          pkgutil --expand installer-out/CrewDispatch-0.1.5.pkg installer-out/expanded
           test -f installer-out/expanded/Scripts/postinstall
           test -f installer-out/expanded/Scripts/payload-arm64.zip
           test -f installer-out/expanded/Scripts/payload-x86_64.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: CrewDispatch-0.1.4-macos-installer-ci
+          name: CrewDispatch-0.1.5-macos-installer-ci
           path: |
-            installer-out/CrewDispatch-0.1.4.pkg
+            installer-out/CrewDispatch-0.1.5.pkg
             installer-out/macos-installer.json
 
   macos-installer-lifecycle:
@@ -212,7 +269,7 @@ jobs:
           node-version: '22.23.3'
       - uses: actions/download-artifact@v4
         with:
-          name: CrewDispatch-0.1.4-macos-installer-ci
+          name: CrewDispatch-0.1.5-macos-installer-ci
           path: installer-out
       - name: Install and completely uninstall the exact package
         shell: bash
@@ -225,13 +282,13 @@ jobs:
           sudo chown "$USER:$(id -gn)" /dev/console
           restore_console() { sudo chown "$ORIGINAL_CONSOLE_OWNER" /dev/console || true; }
           trap restore_console EXIT
-          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.4.pkg -target /; then
+          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.5.pkg -target /; then
             sudo tail -n 200 /var/log/install.log || true
             exit 1
           fi
           TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
           test -f "$TARGET/.jobquay-install.json"
-          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.4'
+          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.5'
           test -f "$HOME/.codex/prompts/crewdispatch.md"
           test -f "$HOME/.codex/crewdispatch-install.json"
           test -f "$HOME/.claude/commands/crewdispatch.md"

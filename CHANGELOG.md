@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.5 — 2026-10-15
+
+Codex uninstall reliability patch release.
+
+- Fixes Windows Codex plugin cleanup when Codex reports the same install directory with a `\\?\` path prefix.
+- Complete uninstall can recover a CrewDispatch-owned plugin/marketplace even when its local marketplace snapshot is already missing.
+- macOS path ownership checks now resolve existing filesystem aliases/symlinks before deciding whether a registration is CrewDispatch-owned.
+- Expanded regression coverage verifies Windows plugin/marketplace removal and macOS path-identity behavior.
+
 ## 0.1.4 — 2026-10-15
 
 Caller-label UI patch release.

@@ -7,6 +7,7 @@ import {
   CODEX_INSTALL_MANIFEST,
   CODEX_MARKETPLACE_NAME,
   CODEX_PLUGIN_ID,
+  canonicalCodexOwnershipPath,
   installCodexClient,
   type CodexCliResult,
   uninstallCodexClient
@@ -32,6 +33,83 @@ function fixture() {
   return { root, target, codexHome, env: { ...process.env, CODEX_HOME: codexHome } as NodeJS.ProcessEnv };
 }
 
+test("Windows ownership path identity treats extended-length and ordinary local paths as identical", () => {
+  const ordinary = "C:\\Users\\Jeff\\AppData\\Local\\Programs\\CrewDispatch";
+  const extended = "\\\\?\\C:\\Users\\Jeff\\AppData\\Local\\Programs\\CrewDispatch";
+  assert.equal(canonicalCodexOwnershipPath(ordinary, "win32"), canonicalCodexOwnershipPath(extended, "win32"));
+});
+
+test("Windows uninstall treats Codex's \\\\?\\ marketplace path as the same owned install root", { skip: process.platform !== "win32" }, () => {
+  const fx = fixture();
+  const calls: string[][] = [];
+  try {
+    const installRun = (args: string[]): CodexCliResult => {
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "add") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID });
+      return fail(`unexpected install command: ${args.join(" ")}`);
+    };
+    assert.equal(installCodexClient(fx.target, { env: fx.env, platform: "win32", runCli: installRun, runPromptScript: () => ok() }).ok, true);
+
+    const extendedRoot = `\\\\?\\${fx.target}`;
+    const uninstallRun = (args: string[]): CodexCliResult => {
+      calls.push([...args]);
+      if (args[0] === "plugin" && args[1] === "list") {
+        return ok({ installed: [{ pluginId: CODEX_PLUGIN_ID, marketplaceSource: { sourceType: "local", source: extendedRoot } }] });
+      }
+      if (args[0] === "plugin" && args[1] === "remove") return ok({ pluginId: CODEX_PLUGIN_ID });
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "list") {
+        return ok({ marketplaces: [{ name: CODEX_MARKETPLACE_NAME, root: extendedRoot }] });
+      }
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "remove") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      return fail(`unexpected uninstall command: ${args.join(" ")}`);
+    };
+
+    const removed = uninstallCodexClient(fx.target, { env: fx.env, platform: "win32", runCli: uninstallRun, runPromptScript: () => ok() });
+    assert.equal(removed.ok, true, JSON.stringify(removed));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin remove ${CODEX_PLUGIN_ID} --json`));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin marketplace remove ${CODEX_MARKETPLACE_NAME} --json`));
+    assert.equal(fs.existsSync(path.join(fx.codexHome, CODEX_INSTALL_MANIFEST)), false);
+  } finally {
+    fs.rmSync(fx.root, { recursive: true, force: true });
+  }
+});
+
+test("macOS uninstall resolves symlinked marketplace roots to the same owned filesystem directory", { skip: process.platform !== "darwin" }, () => {
+  const fx = fixture();
+  const alias = path.join(fx.root, "runtime-alias");
+  const calls: string[][] = [];
+  try {
+    fs.symlinkSync(fx.target, alias, "dir");
+    const installRun = (args: string[]): CodexCliResult => {
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "add") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID });
+      return fail(`unexpected install command: ${args.join(" ")}`);
+    };
+    assert.equal(installCodexClient(alias, { env: fx.env, platform: "darwin", runCli: installRun, runPromptScript: () => ok() }).ok, true);
+
+    const uninstallRun = (args: string[]): CodexCliResult => {
+      calls.push([...args]);
+      if (args[0] === "plugin" && args[1] === "list") {
+        return ok({ installed: [{ pluginId: CODEX_PLUGIN_ID, marketplaceSource: { sourceType: "local", source: fx.target } }] });
+      }
+      if (args[0] === "plugin" && args[1] === "remove") return ok({ pluginId: CODEX_PLUGIN_ID });
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "list") {
+        return ok({ marketplaces: [{ name: CODEX_MARKETPLACE_NAME, root: fx.target }] });
+      }
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "remove") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      return fail(`unexpected uninstall command: ${args.join(" ")}`);
+    };
+
+    const removed = uninstallCodexClient(alias, { env: fx.env, platform: "darwin", runCli: uninstallRun, runPromptScript: () => ok() });
+    assert.equal(removed.ok, true, JSON.stringify(removed));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin remove ${CODEX_PLUGIN_ID} --json`));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin marketplace remove ${CODEX_MARKETPLACE_NAME} --json`));
+    assert.equal(fs.existsSync(path.join(fx.codexHome, CODEX_INSTALL_MANIFEST)), false);
+  } finally {
+    fs.rmSync(fx.root, { recursive: true, force: true });
+  }
+});
+
 test("Codex caller install registers the local marketplace/plugin and uninstall removes only the owned registration", () => {
   const fx = fixture();
   const calls: string[][] = [];
@@ -39,7 +117,7 @@ test("Codex caller install registers the local marketplace/plugin and uninstall 
     const runCli = (args: string[]): CodexCliResult => {
       calls.push([...args]);
       if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "add") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
-      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID, version: "0.1.4" });
+      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID, version: "0.1.5" });
       if (args[0] === "plugin" && args[1] === "list") {
         return ok({ installed: [{ pluginId: CODEX_PLUGIN_ID, marketplaceSource: { sourceType: "local", source: fx.target } }] });
       }
@@ -68,6 +146,36 @@ test("Codex caller install registers the local marketplace/plugin and uninstall 
     assert.equal(fs.existsSync(path.join(fx.codexHome, CODEX_INSTALL_MANIFEST)), false);
     assert.ok(calls.some((args) => args.join(" ") === `plugin remove ${CODEX_PLUGIN_ID} --json`));
     assert.ok(calls.some((args) => args.join(" ") === `plugin marketplace remove ${CODEX_MARKETPLACE_NAME} --json`));
+  } finally {
+    fs.rmSync(fx.root, { recursive: true, force: true });
+  }
+});
+
+test("Codex caller uninstall removes manifest-owned registrations when marketplace snapshot listing fails", () => {
+  const fx = fixture();
+  const calls: string[][] = [];
+  try {
+    const installRun = (args: string[]): CodexCliResult => {
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "add") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID });
+      return fail(`unexpected install command: ${args.join(" ")}`);
+    };
+    assert.equal(installCodexClient(fx.target, { env: fx.env, runCli: installRun, runPromptScript: () => ok() }).ok, true);
+
+    const uninstallRun = (args: string[]): CodexCliResult => {
+      calls.push([...args]);
+      if (args[0] === "plugin" && args[1] === "list") return fail("marketplace root does not contain a supported manifest");
+      if (args[0] === "plugin" && args[1] === "remove") return ok({ pluginId: CODEX_PLUGIN_ID });
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "list") return fail("failed to load marketplace(s)");
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "remove") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      return fail(`unexpected uninstall command: ${args.join(" ")}`);
+    };
+
+    const removed = uninstallCodexClient(fx.target, { env: fx.env, runCli: uninstallRun, runPromptScript: () => ok() });
+    assert.equal(removed.ok, true, JSON.stringify(removed));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin remove ${CODEX_PLUGIN_ID} --json`));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin marketplace remove ${CODEX_MARKETPLACE_NAME} --json`));
+    assert.equal(fs.existsSync(path.join(fx.codexHome, CODEX_INSTALL_MANIFEST)), false);
   } finally {
     fs.rmSync(fx.root, { recursive: true, force: true });
   }

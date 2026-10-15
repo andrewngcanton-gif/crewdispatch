@@ -117,7 +117,7 @@ test(
     };
     if (SOURCE_ROOT) {
       const pkg = JSON.parse(fs.readFileSync(path.join(SOURCE_ROOT, "package.json"), "utf8")) as Record<string, unknown>;
-      assert.equal(pkg.version, "0.1.4");
+      assert.equal(pkg.version, "0.1.5");
       assert.equal(pkg.license, "Apache-2.0");
       const sourceInstaller = path.join(SOURCE_ROOT, "dist", "cli", "install-cli.js");
       installedTarget = path.join(sandbox, "installed-candidate");
@@ -132,7 +132,7 @@ test(
       assert.equal(installed.status, 0, installed.stderr || installed.stdout);
       const installedJson = JSON.parse(installed.stdout) as Record<string, unknown>;
       assert.equal(installedJson.ok, true);
-      assert.equal(installedJson.packageVersion, "0.1.4");
+      assert.equal(installedJson.packageVersion, "0.1.5");
       cliEntry = path.join(installedTarget, "dist", "cli", "crewdispatch-cli.js");
       installedInstaller = path.join(installedTarget, "dist", "cli", "install-cli.js");
       assert.equal(fs.existsSync(cliEntry), true);

@@ -167,11 +167,31 @@ function summarize(result: CodexCliResult): Record<string, unknown> {
   };
 }
 
-function canonical(value: string, platform: NodeJS.Platform): string {
-  const resolved = path.resolve(value);
-  return platform === "win32" ? resolved.toLowerCase() : resolved;
+function stripWindowsExtendedPrefix(value: string): string {
+  if (/^\\\\\?\\UNC\\/i.test(value)) return `\\\\${value.slice(8)}`;
+  if (/^\\\\\?\\/i.test(value)) return value.slice(4);
+  return value;
 }
 
+export function canonicalCodexOwnershipPath(value: string, platform: NodeJS.Platform): string {
+  const pathImpl = platform === "win32" ? path.win32 : path.posix;
+  let resolved = pathImpl.resolve(platform === "win32" ? stripWindowsExtendedPrefix(value) : value);
+  // On the host platform, compare filesystem identity rather than only lexical
+  // spelling. This resolves macOS aliases/symlinks such as /var vs /private/var
+  // and Windows junction/canonical-name differences while the install root exists.
+  if (platform === process.platform) {
+    try {
+      resolved = fs.realpathSync.native(resolved);
+    } catch {
+      // Ownership checks must still work for an absent path; fall back to the
+      // normalized lexical identity recorded in the manifest.
+    }
+  }
+  if (platform === "win32") {
+    return path.win32.normalize(stripWindowsExtendedPrefix(resolved)).toLowerCase();
+  }
+  return path.posix.normalize(resolved);
+}
 type OwnershipStatus = "owned" | "absent" | "foreign" | null;
 
 function marketplaceOwnership(list: CodexCliResult, target: string, platform: NodeJS.Platform): OwnershipStatus {
@@ -180,7 +200,7 @@ function marketplaceOwnership(list: CodexCliResult, target: string, platform: No
   const item = rows.find((row) => row && typeof row === "object" && (row as Record<string, unknown>).name === CODEX_MARKETPLACE_NAME) as Record<string, unknown> | undefined;
   if (!item) return "absent";
   const root = typeof item.root === "string" ? item.root : "";
-  return root !== "" && canonical(root, platform) === canonical(target, platform) ? "owned" : "foreign";
+  return root !== "" && canonicalCodexOwnershipPath(root, platform) === canonicalCodexOwnershipPath(target, platform) ? "owned" : "foreign";
 }
 
 function pluginOwnership(list: CodexCliResult, target: string, platform: NodeJS.Platform): OwnershipStatus {
@@ -192,7 +212,7 @@ function pluginOwnership(list: CodexCliResult, target: string, platform: NodeJS.
     ? item.marketplaceSource as Record<string, unknown>
     : null;
   const source = marketplaceSource && typeof marketplaceSource.source === "string" ? marketplaceSource.source : "";
-  return source !== "" && canonical(source, platform) === canonical(target, platform) ? "owned" : "foreign";
+  return source !== "" && canonicalCodexOwnershipPath(source, platform) === canonicalCodexOwnershipPath(target, platform) ? "owned" : "foreign";
 }
 export function installCodexClient(targetArg: string, opts: CodexClientOptions = {}): CodexClientOperationResult {
   const target = path.resolve(targetArg);
@@ -205,7 +225,7 @@ export function installCodexClient(targetArg: string, opts: CodexClientOptions =
   const existingManifestFile = manifestPath(env, platform);
   if (fs.existsSync(existingManifestFile)) {
     const existingManifest = readManifest(env, platform);
-    if (!existingManifest || canonical(existingManifest.target, platform) !== canonical(target, platform)) {
+    if (!existingManifest || canonicalCodexOwnershipPath(existingManifest.target, platform) !== canonicalCodexOwnershipPath(target, platform)) {
       conflicts.push({ target: existingManifestFile, reason: "an unrecognized or different-install CrewDispatch Codex ownership manifest was preserved" });
       return {
         ok: false,
@@ -291,23 +311,27 @@ export function uninstallCodexClient(targetArg: string, opts: CodexClientOptions
   }
 
   const manifest = readManifest(env, platform);
-  const manifestOwned = manifest !== null && canonical(manifest.target, platform) === canonical(target, platform);
+  const manifestOwned = manifest !== null && canonicalCodexOwnershipPath(manifest.target, platform) === canonicalCodexOwnershipPath(target, platform);
 
   let registrationConflict = false;
   let plugin: CodexCliResult;
   if (manifestOwned && manifest!.pluginInstalled) {
     const listedPlugin = runCodex(["plugin", "list", "--marketplace", CODEX_MARKETPLACE_NAME, "--json"], opts);
     const ownership = pluginOwnership(listedPlugin, target, platform);
-    if (ownership === "owned") {
-      plugin = runCodex(["plugin", "remove", CODEX_PLUGIN_ID, "--json"], opts);
-      if (!plugin.ok) warnings.push("Codex plugin removal failed.");
+    if (ownership === "foreign") {
+      plugin = listedPlugin;
+      registrationConflict = true;
+      warnings.push("Codex plugin points at a different marketplace root; it was preserved.");
+      conflicts.push({ target: CODEX_PLUGIN_ID, reason: "plugin points at a different marketplace root" });
     } else if (ownership === "absent") {
       plugin = { ok: true, exitCode: 0, stdout: "plugin already absent", stderr: "", json: null, error: null };
     } else {
-      plugin = listedPlugin;
-      registrationConflict = true;
-      warnings.push(ownership === "foreign" ? "Codex plugin points at a different marketplace root; it was preserved." : "Could not verify Codex plugin ownership; it was preserved.");
-      conflicts.push({ target: CODEX_PLUGIN_ID, reason: ownership === "foreign" ? "plugin points at a different marketplace root" : "plugin ownership could not be verified" });
+      // A broken/missing local marketplace can make `plugin list` fail even though
+      // Codex can still remove the installed registration. The CrewDispatch
+      // ownership manifest is sufficient evidence to attempt our namespaced
+      // plugin removal; never let a read-only snapshot failure strand it.
+      plugin = runCodex(["plugin", "remove", CODEX_PLUGIN_ID, "--json"], opts);
+      if (!plugin.ok) warnings.push("Codex plugin removal failed.");
     }
   } else {
     plugin = { ok: true, exitCode: 0, stdout: "plugin was not installed by this CrewDispatch installation", stderr: "", json: null, error: null };
@@ -317,16 +341,18 @@ export function uninstallCodexClient(targetArg: string, opts: CodexClientOptions
   if (manifestOwned && manifest!.marketplaceInstalled && plugin.ok && !registrationConflict) {
     const listedMarketplaces = runCodex(["plugin", "marketplace", "list", "--json"], opts);
     const ownership = marketplaceOwnership(listedMarketplaces, target, platform);
-    if (ownership === "owned") {
-      marketplace = runCodex(["plugin", "marketplace", "remove", CODEX_MARKETPLACE_NAME, "--json"], opts);
-      if (!marketplace.ok) warnings.push("Codex marketplace removal failed.");
+    if (ownership === "foreign") {
+      marketplace = listedMarketplaces;
+      registrationConflict = true;
+      warnings.push("Codex marketplace name now points at a different root; it was preserved.");
+      conflicts.push({ target: CODEX_MARKETPLACE_NAME, reason: "marketplace name points at a different root" });
     } else if (ownership === "absent") {
       marketplace = { ok: true, exitCode: 0, stdout: "marketplace already absent", stderr: "", json: null, error: null };
     } else {
-      marketplace = listedMarketplaces;
-      registrationConflict = true;
-      warnings.push(ownership === "foreign" ? "Codex marketplace name now points at a different root; it was preserved." : "Could not verify Codex marketplace ownership; it was preserved.");
-      conflicts.push({ target: CODEX_MARKETPLACE_NAME, reason: ownership === "foreign" ? "marketplace name points at a different root" : "marketplace ownership could not be verified" });
+      // As with plugin removal, a stale local root can make marketplace listing
+      // fail while the official CLI can still delete the registration safely.
+      marketplace = runCodex(["plugin", "marketplace", "remove", CODEX_MARKETPLACE_NAME, "--json"], opts);
+      if (!marketplace.ok) warnings.push("Codex marketplace removal failed.");
     }
   } else if (manifestOwned && manifest!.marketplaceInstalled) {
     marketplace = { ok: false, exitCode: null, stdout: "", stderr: "", json: null, error: "plugin cleanup is unresolved; marketplace was preserved" };

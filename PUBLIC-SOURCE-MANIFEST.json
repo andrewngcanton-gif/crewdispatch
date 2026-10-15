@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "ca9840f60b864304978a60305fa153e0524bced1",
+  "sourceCommit": "e6878f0cf7e39785db891ebebdb77888a1b9689c",
   "sourceDirty": false,
   "files": [
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": ".github/workflows/installer-ci.yml",
-      "sha256": "e6ccb06b9b6de7b4cf591188ff67ac0fc587263a9ac7a558a521204869f370ac"
+      "sha256": "607ea62209f4a08ace8604299180b14a827c484c29a8e23484fd4ab463e2b053"
     },
     {
       "path": ".gitignore",
@@ -25,7 +25,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "4510dfa4ea27767d4a8e19fa86b220323e5d893406efe54cf1ccacb23df626e7"
+      "sha256": "de31e566200453642e4dd599e6778cd8d1896219ba377995385d59384fdef86a"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -37,7 +37,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "8c21628a190bcb05e3c8b4eaae02ee804e6385008aee9a2595cc58606f7bfe62"
+      "sha256": "9ae970c43c5749bef7ef27fcb62afb8fe31db177ecf08522aa7b36bd8a039558"
     },
     {
       "path": "THIRD_PARTY_NOTICES",
@@ -53,7 +53,7 @@
     },
     {
       "path": "docs/getting-started.md",
-      "sha256": "7ad313795a9ce79dfb92538a326b4394da6e221e2defffe010d25e1c23fbf34b"
+      "sha256": "37dc1097b01ca7c55380f5af7ad6170b50a144c199909e157b9110034f16d3f4"
     },
     {
       "path": "docs/uninstall.md",
@@ -77,15 +77,15 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "a44385ea76c815899b3643d8edd69a135610d94c190083173695ee06795cc444"
+      "sha256": "e887e84584f8c02bede8c768e45165f8c73c8ec6132fc5c33ed1ebf9def3f103"
     },
     {
       "path": "package.json",
-      "sha256": "c014bd5ddf282cee983755ae1b608ee400ca8aa2897d0ac801a880446b285b32"
+      "sha256": "abc5c37934482de5ec79a578ae62b31d5dad16e54ed0dca88061410defdac4e6"
     },
     {
       "path": "plugins/crewdispatch/.codex-plugin/plugin.json",
-      "sha256": "3ebc1597ee76ea29def23724ed063769172263a561f5b6a85f9501caad7a8f42"
+      "sha256": "4e0c2db226ee78ee094ab6fa5a2268fcb5b151805c327eb3511275b7dca97246"
     },
     {
       "path": "plugins/crewdispatch/mcp.template.json",
@@ -105,7 +105,7 @@
     },
     {
       "path": "scripts/build-release-candidate.cjs",
-      "sha256": "1db67c368990d5d7a42d2fd2068e996c1ca2495b1c495e9092c4197fac94f122"
+      "sha256": "4154f5eb676d6c9dbb1824d28739e114cc599167ce9eebbeed3596ba7e4fa906"
     },
     {
       "path": "scripts/build-windows-installer.cjs",
@@ -249,7 +249,7 @@
     },
     {
       "path": "src/codex/client-install.ts",
-      "sha256": "a85a0c4582ba5a06c5973c491de4ebf5fc23327c8830a7c85d6993262783e397"
+      "sha256": "f4e890d7510726838e4f31ce835ffd4d6fa69c3b2b555c6d9f894e14cb7c8973"
     },
     {
       "path": "src/config/global.ts",
@@ -429,7 +429,7 @@
     },
     {
       "path": "src/mcp/server.ts",
-      "sha256": "41d840ce5667395ae728d5e911043ed85798ff707f53471909f8e9544adcf45c"
+      "sha256": "0f72601f9fa98c847a4418cd1c9b20405945362776b98101eac3ef3e33ab8aba"
     },
     {
       "path": "src/mcp/tools.ts",
@@ -569,7 +569,7 @@
     },
     {
       "path": "src/tests/e2e/macos-command-code-real.e2e.ts",
-      "sha256": "e444643197570883a3b9527ea6cf689a4bff7a93698b826e4f356a0b8dc37fd5"
+      "sha256": "f183b9bb3d474c382d81a535ef58304a0967e4471b349d02a5c983ecb0f4cb1d"
     },
     {
       "path": "src/tests/e2e/macos-lifecycle-probe.e2e.ts",
@@ -685,7 +685,7 @@
     },
     {
       "path": "src/tests/integration/claude-packaged-install.test.ts",
-      "sha256": "e8b02e97d7065911180429d34f3a4d35fba80cacb793da874053d7a801ba7802"
+      "sha256": "ce70b17cb71439e0abe075d997ba22dafd887425351e5d082b9277f1cfcb6549"
     },
     {
       "path": "src/tests/integration/claude-recovery-real.test.ts",
@@ -789,7 +789,7 @@
     },
     {
       "path": "src/tests/integration/macos-dashboard-lifecycle.test.ts",
-      "sha256": "42ff35580be0a8b3e9be7885356ad1f8f259173027819322e079e6cb157da227"
+      "sha256": "312a9d97f17618d23edf8b7ac9aa93a1336b87354a433c387d829ec38f85b5b3"
     },
     {
       "path": "src/tests/integration/macos-data-root.test.ts",
@@ -833,7 +833,7 @@
     },
     {
       "path": "src/tests/integration/release-candidate.test.ts",
-      "sha256": "3ef7767b13738a26d84341b3a4c7f28b13370bfd1e987b6f768240b89589d4ca"
+      "sha256": "20bdc0818489b344d4a4bcc993ad12108c67dab0298b772814b60d6d5f1cdcab"
     },
     {
       "path": "src/tests/integration/schema-rollback-mcp.test.ts",
@@ -917,7 +917,7 @@
     },
     {
       "path": "src/tests/unit/codex-client-install.test.ts",
-      "sha256": "88cb5667dbd097aeb47c82d29fad6066bcc582bf83f9cb414fb621defb8ea2d0"
+      "sha256": "26108af8a088d4525e25d1b7fc21f6b8d4d4d659fad53f2949806e60e1e74053"
     },
     {
       "path": "src/tests/unit/command-code-acp-bridge.test.ts",
