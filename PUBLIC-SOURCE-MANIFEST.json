@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "c48a2e707cbf13705cab38408117298f78d9c0e7",
+  "sourceCommit": "ca9840f60b864304978a60305fa153e0524bced1",
   "sourceDirty": false,
   "files": [
     {
@@ -25,7 +25,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "a071515082efdd13e8e69a95fef975ff9ff38ea8225281bb54a792df07a5e378"
+      "sha256": "4510dfa4ea27767d4a8e19fa86b220323e5d893406efe54cf1ccacb23df626e7"
     },
     {
       "path": "CONTRIBUTING.md",

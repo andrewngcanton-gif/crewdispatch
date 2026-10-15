@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.4 — in validation
+## 0.1.4 — 2026-10-15
 
 Caller-label UI patch release.
 
