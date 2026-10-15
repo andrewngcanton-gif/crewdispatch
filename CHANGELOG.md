@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6 — 2026-10-15
+
+Command Code reasoning visibility patch release.
+
+- Restores Command Code reasoning in the Dashboard when `Show reasoning` is enabled.
+- Keeps reasoning hidden by default and keeps streamed thought chunks out of compact Live activity.
+- Adds end-to-end regression coverage from the production Command Code normalizer through the Hub and real browser UI.
+
 ## 0.1.5 — 2026-10-15
 
 Codex uninstall reliability patch release.

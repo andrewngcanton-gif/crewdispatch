@@ -99,6 +99,8 @@ export class CcAcpNormalizer {
   private readonly emit: (record: Record<string, unknown>) => void;
   private readonly freshSession: boolean;
   private text = "";
+  private thinkingOpen = false;
+  private thinkingText = "";
   private readonly toolIds = new Set<string>();
   private deniedTool = false;
   /**
@@ -129,6 +131,22 @@ export class CcAcpNormalizer {
     this.promptStarted = true;
   }
 
+  /**
+   * Close the currently streamed reasoning block at a PROTOCOL boundary.
+   * Command Code ACP publishes thought CHUNKS but no explicit thought-end frame,
+   * so the bridge closes a block only when the protocol itself proves a
+   * transition: assistant text starts, a tool call/update starts, or the prompt
+   * turn returns/aborts. The synthesized closure exists for readable activity
+   * rendering/privacy only; it is never decode-timing evidence.
+   */
+  flushReasoning(): void {
+    if (!this.thinkingOpen) return;
+    this.thinkingOpen = false;
+    const text = this.thinkingText;
+    this.thinkingText = "";
+    this.emit({ type: "event", event: { type: "thinking_end", ...(text ? { text } : {}) } });
+  }
+
   /** Translate ONE `session/update` payload (`params.update`). */
   handleUpdate(update: unknown): void {
     const record = asRecord(update);
@@ -137,6 +155,9 @@ export class CcAcpNormalizer {
     if (!kind) return;
 
     if (kind === "agent_message_chunk") {
+      // Assistant output is a protocol-proven transition out of the preceding
+      // reasoning block, so close that block BEFORE the answer delta.
+      this.flushReasoning();
       const text = contentText(record.content);
       if (text != null && text.length > 0) {
         this.text += text;
@@ -147,11 +168,18 @@ export class CcAcpNormalizer {
     if (kind === "agent_thought_chunk") {
       const text = contentText(record.content);
       if (text != null && text.length > 0) {
+        if (!this.thinkingOpen) {
+          this.thinkingOpen = true;
+          this.emit({ type: "event", event: { type: "thinking_start" } });
+        }
+        this.thinkingText += text;
         this.emit({ type: "event", event: { type: "thinking_delta", delta: text } });
       }
       return;
     }
     if (kind === "tool_call") {
+      // A tool request is another provider-proven boundary after model output.
+      this.flushReasoning();
       const id = safeText(record.toolCallId, 200);
       const title = safeText(record.title, 200) ?? safeText(record.kind, 64) ?? "tool";
       if (id && !this.toolIds.has(id)) this.toolIds.add(id);
@@ -159,6 +187,10 @@ export class CcAcpNormalizer {
       return;
     }
     if (kind === "tool_call_update") {
+      // Defensive protocol ordering: if a runtime reports an update without the
+      // preceding tool_call frame, the update itself still proves model output
+      // has yielded to tool activity.
+      this.flushReasoning();
       // A terminal denial is the CLI's own proven evidence that a permission
       // gate rejected this tool; it refines the terminal classification and is
       // never inferred from arbitrary output.
@@ -226,6 +258,9 @@ export class CcAcpNormalizer {
    * `_meta.usage` leaves the counters unavailable.
    */
   handlePromptResult(result: unknown): CcAcpPromptUsage | null {
+    // Returning from session/prompt is the final protocol boundary of the turn;
+    // a reasoning-only response therefore still gets one complete display block.
+    this.flushReasoning();
     const usage = ccAcpPromptUsage(result, { freshSession: this.freshSession });
     if (!usage) return null;
     const event: Record<string, unknown> = { type: "usage" };

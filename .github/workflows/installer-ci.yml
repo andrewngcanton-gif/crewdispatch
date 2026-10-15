@@ -2,7 +2,7 @@ name: Installer CI
 
 on:
   push:
-    branches: [installer-0.1.5]
+    branches: [installer-0.1.6]
   workflow_dispatch:
 
 permissions:
@@ -45,16 +45,16 @@ jobs:
           if (-not (Test-Path $makensis)) { throw 'makensis.exe not found after NSIS install' }
           $env:MAKENSIS = $makensis
           New-Item -ItemType Directory -Force installer-out | Out-Null
-          node scripts/build-windows-installer.cjs --payload-dir $env:CREWDISPATCH_WINDOWS_UNPACKED --output installer-out/CrewDispatch-Setup-0.1.5.exe | Tee-Object -FilePath installer-out/windows-installer.json
+          node scripts/build-windows-installer.cjs --payload-dir $env:CREWDISPATCH_WINDOWS_UNPACKED --output installer-out/CrewDispatch-Setup-0.1.6.exe | Tee-Object -FilePath installer-out/windows-installer.json
           New-Item -ItemType Directory -Force installer-out/candidate | Out-Null
           Copy-Item (Join-Path $env:CREWDISPATCH_WINDOWS_CANDIDATE '*') installer-out/candidate -Force
-          if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.5.exe)) { throw 'setup EXE missing' }
+          if (-not (Test-Path installer-out/CrewDispatch-Setup-0.1.6.exe)) { throw 'setup EXE missing' }
       - name: Verify visible Windows welcome page
         shell: pwsh
         run: |
           ./scripts/test-windows-installer-ui.ps1 `
-            -Setup installer-out/CrewDispatch-Setup-0.1.5.exe `
-            -Version 0.1.5 `
+            -Setup installer-out/CrewDispatch-Setup-0.1.6.exe `
+            -Version 0.1.6 `
             -Screenshot installer-out/windows-welcome.png
       - name: Stage Codex Desktop CLI ownership fixture
         shell: pwsh
@@ -112,13 +112,13 @@ jobs:
       - name: Silent install and uninstall lifecycle
         shell: pwsh
         run: |
-          $setup = (Resolve-Path installer-out/CrewDispatch-Setup-0.1.5.exe).Path
+          $setup = (Resolve-Path installer-out/CrewDispatch-Setup-0.1.6.exe).Path
           $install = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "setup failed: $($install.ExitCode)" }
           $target = Join-Path $env:LOCALAPPDATA 'Programs\CrewDispatch'
           if (-not (Test-Path (Join-Path $target '.jobquay-install.json'))) { throw 'managed install marker missing' }
           $pkg = Get-Content (Join-Path $target 'package.json') -Raw | ConvertFrom-Json
-          if ($pkg.version -ne '0.1.5') { throw "unexpected installed version $($pkg.version)" }
+          if ($pkg.version -ne '0.1.6') { throw "unexpected installed version $($pkg.version)" }
           $codexPrompt = Join-Path $HOME '.codex\prompts\crewdispatch.md'
           $codexManifest = Join-Path $HOME '.codex\crewdispatch-install.json'
           $claudeCommand = Join-Path $HOME '.claude\commands\crewdispatch.md'
@@ -161,9 +161,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: CrewDispatch-0.1.5-windows-installer-ci
+          name: CrewDispatch-0.1.6-windows-installer-ci
           path: |
-            installer-out/CrewDispatch-Setup-0.1.5.exe
+            installer-out/CrewDispatch-Setup-0.1.6.exe
             installer-out/windows-installer.json
             installer-out/windows-welcome.png
             installer-out/candidate/*.zip
@@ -211,7 +211,7 @@ jobs:
           cp "$CANDIDATE"/* candidate-out/
       - uses: actions/upload-artifact@v4
         with:
-          name: CrewDispatch-0.1.5-macos-payload-${{ matrix.artifact_arch }}
+          name: CrewDispatch-0.1.6-macos-payload-${{ matrix.artifact_arch }}
           path: |
             candidate-out/*.zip
             candidate-out/*.json
@@ -227,29 +227,29 @@ jobs:
           node-version: '22.23.3'
       - uses: actions/download-artifact@v4
         with:
-          pattern: CrewDispatch-0.1.5-macos-payload-*
+          pattern: CrewDispatch-0.1.6-macos-payload-*
           path: candidates
           merge-multiple: true
       - name: Build dual-architecture package
         shell: bash
         run: |
           set -euo pipefail
-          ARM="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.5-darwin-arm64-*.zip' -print -quit)"
-          X64="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.5-darwin-x64-*.zip' -print -quit)"
+          ARM="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.6-darwin-arm64-*.zip' -print -quit)"
+          X64="$(find candidates -maxdepth 1 -name 'crewdispatch-0.1.6-darwin-x64-*.zip' -print -quit)"
           test -n "$ARM"
           test -n "$X64"
           mkdir -p installer-out
-          node scripts/build-macos-installer.cjs --arm64-archive "$ARM" --x64-archive "$X64" --output installer-out/CrewDispatch-0.1.5.pkg | tee installer-out/macos-installer.json
+          node scripts/build-macos-installer.cjs --arm64-archive "$ARM" --x64-archive "$X64" --output installer-out/CrewDispatch-0.1.6.pkg | tee installer-out/macos-installer.json
           /bin/zsh -n installers/macos/postinstall
-          pkgutil --expand installer-out/CrewDispatch-0.1.5.pkg installer-out/expanded
+          pkgutil --expand installer-out/CrewDispatch-0.1.6.pkg installer-out/expanded
           test -f installer-out/expanded/Scripts/postinstall
           test -f installer-out/expanded/Scripts/payload-arm64.zip
           test -f installer-out/expanded/Scripts/payload-x86_64.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: CrewDispatch-0.1.5-macos-installer-ci
+          name: CrewDispatch-0.1.6-macos-installer-ci
           path: |
-            installer-out/CrewDispatch-0.1.5.pkg
+            installer-out/CrewDispatch-0.1.6.pkg
             installer-out/macos-installer.json
 
   macos-installer-lifecycle:
@@ -269,7 +269,7 @@ jobs:
           node-version: '22.23.3'
       - uses: actions/download-artifact@v4
         with:
-          name: CrewDispatch-0.1.5-macos-installer-ci
+          name: CrewDispatch-0.1.6-macos-installer-ci
           path: installer-out
       - name: Install and completely uninstall the exact package
         shell: bash
@@ -282,13 +282,13 @@ jobs:
           sudo chown "$USER:$(id -gn)" /dev/console
           restore_console() { sudo chown "$ORIGINAL_CONSOLE_OWNER" /dev/console || true; }
           trap restore_console EXIT
-          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.5.pkg -target /; then
+          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.6.pkg -target /; then
             sudo tail -n 200 /var/log/install.log || true
             exit 1
           fi
           TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
           test -f "$TARGET/.jobquay-install.json"
-          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.5'
+          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.6'
           test -f "$HOME/.codex/prompts/crewdispatch.md"
           test -f "$HOME/.codex/crewdispatch-install.json"
           test -f "$HOME/.claude/commands/crewdispatch.md"

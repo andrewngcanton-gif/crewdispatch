@@ -743,6 +743,10 @@ export async function runCcAcpBridge(args: CcAcpBridgeArgs, io: CcAcpBridgeIo): 
         null
       );
     } catch (error) {
+      // A failed prompt can still have streamed reasoning before the failure.
+      // Close the display block at the turn boundary so explicit Show reasoning
+      // keeps that real provider output instead of silently dropping it.
+      normalizer.flushReasoning();
       emit({ type: "event", event: { type: "turn_end" } });
       const childExit = conn.exit();
       const summary = normalizer.summary();

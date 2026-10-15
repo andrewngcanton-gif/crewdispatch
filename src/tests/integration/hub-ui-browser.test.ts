@@ -59,6 +59,7 @@ import { killProcessTree } from "../../runtime/process";
 import { commandCodeSettingsView, workBuddyAiSettingsView } from "../helpers/settings-fixtures";
 import { readInvocationArgs, writeFakeCommandCodeCli, writeInstalledCommandCodePackage } from "../helpers/command-code-package-fixture";
 import { resetDefaultSettingsReadsForTests } from "../../config/settings-registry";
+import { CcAcpNormalizer } from "../../providers/command-code/acp-normalizer";
 import {
   ACP_FIXTURE_ANSWER,
   ACP_FIXTURE_ANSWER_TAIL,
@@ -621,6 +622,59 @@ test("an already-open Hub Jobs page shows a newly created session within one pol
       `[hub-ui-browser] EV1b workbuddy activity (${assistantRows.length} assistant rows): ` +
         JSON.stringify(renderedLog.split("\n").slice(0, 10))
     );
+
+    // EV1c: Command Code reasoning must traverse the PRODUCTION normalizer ->
+    // durable log -> compact Hub API -> browser. Do not hand-invent a
+    // thinking_end fixture here: that was exactly how the 2026-10-07 regression
+    // escaped. The real normalizer must create the complete block from ACP
+    // agent_thought_chunk frames.
+    const ccRecords: Record<string, unknown>[] = [];
+    const ccNormalizer = new CcAcpNormalizer({ freshSession: true, emit: (record) => ccRecords.push(record) });
+    ccNormalizer.markPromptStarted();
+    ccNormalizer.handleUpdate({ sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "COMMAND_CODE_BROWSER_REASONING_A " } });
+    ccNormalizer.handleUpdate({ sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "B" } });
+    ccNormalizer.handleUpdate({ sessionUpdate: "agent_message_chunk", content: { type: "text", text: "browser answer" } });
+    ccNormalizer.handlePromptResult({ stopReason: "end_turn" });
+    fs.writeFileSync(
+      workBuddyLog,
+      [
+        JSON.stringify({ type: "event", event: { type: "run_start", sessionId: "cc-browser-reasoning" } }),
+        ...ccRecords.map((record) => JSON.stringify(record)),
+        JSON.stringify({ type: "result", subtype: "success", result: "browser answer", session_id: "cc-browser-reasoning", stop_reason: "end_turn" })
+      ].join("\n") + "\n",
+      "utf8"
+    );
+    const ccApiHidden = await fetch(`${hubUrl}/api/jobs/${jobId}/log?limit=1000&activity=1&scope=current&include_reasoning=false`).then((response) => response.json()) as any;
+    assert.equal(JSON.stringify(ccApiHidden).includes("COMMAND_CODE_BROWSER_REASONING_A"), false, "Command Code reasoning is private by default at the Hub boundary");
+    const ccApiVisible = await fetch(`${hubUrl}/api/jobs/${jobId}/log?limit=1000&activity=1&scope=current&include_reasoning=true`).then((response) => response.json()) as any;
+    assert.ok(
+      ccApiVisible.entries.some((entry: any) => entry.data?.event?.type === "thinking_end" && entry.reasoning?.includes("COMMAND_CODE_BROWSER_REASONING_A B")),
+      "production Command Code normalization produces the complete reasoning row required by compact activity"
+    );
+    await page.evaluate(`(() => {
+      const box = document.getElementById("showReasoning");
+      box.checked = true;
+      box.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    await waitForPage(
+      page.evaluate,
+      () => `(document.getElementById("log").textContent || "").includes("Reasoning · COMMAND_CODE_BROWSER_REASONING_A B")`,
+      15000,
+      "Command Code reasoning in the real Dashboard"
+    );
+    const ccRenderedLog = String(await page.evaluate(`document.getElementById("log").innerText`));
+    assert.equal(
+      ccRenderedLog.split("\n").filter((line) => line === "Reasoning · COMMAND_CODE_BROWSER_REASONING_A B").length,
+      1,
+      "one contiguous Command Code reasoning block renders exactly once"
+    );
+    assert.equal(ccRenderedLog.includes("thinking_delta"), false, "the real Dashboard never renders token-level thought chunk noise");
+    await page.evaluate(`(() => {
+      const box = document.getElementById("showReasoning");
+      box.checked = false;
+      box.dispatchEvent(new Event("change", { bubbles: true }));
+    })()`);
+    console.log("[hub-ui-browser] EV1c command-code reasoning: production normalizer -> Hub -> browser PASS");
 
     // 5) Permission note in a real render — yolo (the default) shows Command
     // Code's own yolo note, not a generic caution shared with other modes.

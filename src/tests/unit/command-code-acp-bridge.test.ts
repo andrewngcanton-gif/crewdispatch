@@ -621,7 +621,8 @@ test("the bridge launches the CLI's OWN `acp` entry (never print mode) and confi
     attach: defaultAttach({ models: { currentModelId: "inclusionai/ling-3.0-flash-sante:free", availableModels: AVAILABLE_MODELS } }),
     prompt: {
       updates: [
-        { sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "considering" } },
+        { sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "considering " } },
+        { sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "carefully" } },
         { sessionUpdate: "agent_message_chunk", content: { type: "text", text: "Hello " } },
         { sessionUpdate: "agent_message_chunk", content: { type: "text", text: "world" } }
       ],
@@ -660,7 +661,17 @@ test("the bridge launches the CLI's OWN `acp` entry (never print mode) and confi
   );
   assert.deepEqual(
     events.filter((event) => event.type === "thinking_delta").map((event) => event.delta),
-    ["considering"]
+    ["considering ", "carefully"]
+  );
+  assert.equal(events.filter((event) => event.type === "thinking_start").length, 1, "one reasoning block opens once");
+  assert.deepEqual(
+    events.filter((event) => event.type === "thinking_end").map((event) => event.text),
+    ["considering carefully"],
+    "the production normalizer closes one complete reasoning block before assistant text"
+  );
+  assert.ok(
+    events.findIndex((event) => event.type === "thinking_end") < events.findIndex((event) => event.type === "text_delta"),
+    "reasoning closes before the answer starts"
   );
   const terminal = terminalOf(records);
   assert.ok(terminal);
@@ -669,6 +680,25 @@ test("the bridge launches the CLI's OWN `acp` entry (never print mode) and confi
   assert.equal(terminal.stop_reason, "end_turn");
   assert.equal(terminal.finalText, "Hello world");
   assert.equal(terminal.session_id, SESSION_ID);
+});
+
+test("a reasoning-only Command Code turn flushes one complete thinking block when session/prompt returns", async () => {
+  const server = new FakeCcAcpServer({
+    prompt: {
+      updates: [
+        { sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "reasoning only " } },
+        { sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "before result" } }
+      ],
+      result: { stopReason: "end_turn" }
+    }
+  });
+  const records: Record<string, unknown>[] = [];
+  const code = await runCcAcpBridge(bridgeArgs(), bridgeIo(server, { records }));
+  assert.equal(code, 9, "reasoning-only remains the provider's no-assistant-response class");
+  const events = eventsOf(records);
+  assert.deepEqual(events.filter((event) => event.type === "thinking_end").map((event) => event.text), ["reasoning only before result"]);
+  assert.equal(events.filter((event) => event.type === "thinking_delta").length, 2);
+  assert.equal(terminalOf(records)?.subtype, "error", "closing reasoning never fabricates an assistant success");
 });
 
 test("yolo maps to the CLI's own bypass mode; the mode is set before the prompt", async () => {
@@ -885,6 +915,7 @@ test("usage folds the turn counters, reconciles the cumulative USD cost into del
         { sessionUpdate: "usage_update", used: 1200, size: 200000, cost: { amount: 0.0025, currency: "USD" } },
         { sessionUpdate: "tool_call", toolCallId: "call-1", title: "Edit: C:/tmp/disposable/note.txt", kind: "edit" },
         { sessionUpdate: "tool_call_update", toolCallId: "call-1", status: "completed" },
+        { sessionUpdate: "agent_thought_chunk", content: { type: "text", text: "post-tool reasoning" } },
         { sessionUpdate: "agent_message_chunk", content: { type: "text", text: "done" } }
       ],
       result: {
