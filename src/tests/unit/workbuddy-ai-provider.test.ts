@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   createWorkBuddyAiAdapter,
+  isWorkBuddyRoutingPresetOnlyCatalog,
   parseWorkBuddyAiHelpModels,
   parseWorkBuddyAiPermissionModes,
   parseWorkBuddyAiControlCatalog,
@@ -74,6 +75,15 @@ test("WorkBuddy AI parses the public help model choices", () => {
   );
   assert.deepEqual(models, ["fast-model", "balanced-model", "primary-model", "deep-model"]);
 });
+
+
+test("WorkBuddy routing presets are never mistaken for a complete explicit-model catalog", () => {
+  assert.equal(isWorkBuddyRoutingPresetOnlyCatalog(["fast-model", "balanced-model", "primary-model", "deep-model"]), true);
+  assert.equal(isWorkBuddyRoutingPresetOnlyCatalog(["default-model", "fast-model", "balanced-model", "primary-model", "deep-model"]), true);
+  assert.equal(isWorkBuddyRoutingPresetOnlyCatalog(["fast-model", "deepseek-v4.1-flash"]), false);
+  assert.equal(isWorkBuddyRoutingPresetOnlyCatalog([]), false);
+});
+
 
 test("WorkBuddy AI parses its resolved product snapshot using the cli agent allowlist", () => {
   const parsed = parseWorkBuddyAiProductSnapshot({
@@ -185,6 +195,67 @@ test("WorkBuddy AI parses live get_available_models control metadata", () => {
   assert.equal(parsed.modelMeta.hy3?.free, undefined, "control metadata alone never invents a current promotion");
   assert.equal(parsed.modelMeta["hy3"]?.credits, "x0.00 credits");
   assert.equal(parsed.modelMeta["glm-5.3-flash"]?.label, "GLM-5.3-Flash");
+});
+
+test("WorkBuddy model reads prefer a fresh explicit live catalog over an older product snapshot", async () => {
+  const liveCatalog = {
+    models: ["deepseek-v4.1-flash", "hy3", "gpt-6.1-sol"],
+    modelMeta: {},
+    nextPromotionBoundaryAt: null
+  };
+  const snapshotCatalog = {
+    models: ["fast-model", "balanced-model", "primary-model", "deep-model"],
+    modelMeta: {},
+    nextPromotionBoundaryAt: null
+  };
+  const adapter = createWorkBuddyAiAdapter({
+    platform: "linux",
+    readLiveCatalog: () => ({ catalog: liveCatalog, raw: "live-current" }),
+    readProductSnapshotEvidence: () => ({ catalog: snapshotCatalog, raw: "snapshot-old" })
+  });
+  const result = await adapter.readModelCatalog({ cliPath: "/fake/workbuddy" });
+  assert.equal(result.ok, true);
+  assert.equal(result.source, "cli-control-models");
+  assert.deepEqual(result.models, liveCatalog.models);
+  assert.equal(result.raw, "live-current");
+});
+
+test("WorkBuddy routing-preset-only live output falls back to a full provider snapshot instead of declaring DeepSeek/HY absent", async () => {
+  const routing = {
+    models: ["fast-model", "balanced-model", "primary-model", "deep-model"],
+    modelMeta: {},
+    nextPromotionBoundaryAt: null
+  };
+  const snapshot = {
+    models: ["default-model", "deepseek-v4.1-flash", "hy3", "gpt-6.1-sol"],
+    modelMeta: {},
+    nextPromotionBoundaryAt: null
+  };
+  const adapter = createWorkBuddyAiAdapter({
+    platform: "linux",
+    readLiveCatalog: () => ({ catalog: routing, raw: "offline-routing-only" }),
+    readProductSnapshotEvidence: () => ({ catalog: snapshot, raw: "provider-snapshot" })
+  });
+  const result = await adapter.readModelCatalog({ cliPath: "/fake/workbuddy" });
+  assert.equal(result.ok, true);
+  assert.equal(result.source, "workbuddy-product-snapshot");
+  assert.ok(result.models.includes("deepseek-v4.1-flash"));
+  assert.ok(result.models.includes("hy3"));
+  assert.match(String(result.error), /routing presets only/);
+});
+
+test("WorkBuddy snapshot metadata never shrinks a fresher accepted live model set", () => {
+  const snapshotRaw = JSON.stringify({
+    models: [{ id: "deepseek-v4.1-flash", name: "DeepSeek", credits: "x0.00" }],
+    agents: [{ name: "cli", models: ["deepseek-v4.1-flash"] }]
+  });
+  const presented = readWorkBuddyAiPresentation(
+    "/fake/workbuddy",
+    ["deepseek-v4.1-flash", "new-live-model"],
+    snapshotRaw
+  );
+  assert.deepEqual(presented.offeredModels, ["deepseek-v4.1-flash", "new-live-model"]);
+  assert.equal(presented.modelMeta["deepseek-v4.1-flash"]?.label, "DeepSeek");
 });
 
 test("WorkBuddy AI presentation prefers live control catalog over product presets", () => {

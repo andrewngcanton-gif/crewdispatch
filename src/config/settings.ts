@@ -371,6 +371,8 @@ export interface SettingsCapabilityPatch {
    * package's shipped reference.
    */
   model_meta: Record<string, { free?: boolean }> | null;
+  /** Fresh CLI-observed default for display only; never persisted as an explicit model. */
+  observed_default_model: string | null;
 }
 
 export type ReadSettingsCapabilitiesResult =
@@ -418,7 +420,8 @@ export async function readSettingsCapabilities(root: string, deps: SettingsDeps 
         },
         capabilities: { supports_effort: false, permission_modes: [], checked: true },
         catalog: null,
-        model_meta: null
+        model_meta: null,
+        observed_default_model: null
       }
     };
   }
@@ -440,14 +443,21 @@ export async function readSettingsCapabilities(root: string, deps: SettingsDeps 
     },
     capabilities: { supports_effort: caps.supportsEffort, permission_modes: caps.permissionModes, checked: true },
     catalog: null,
-    model_meta: null
+    model_meta: null,
+    observed_default_model: null
   };
 
-  // The `--list-models` fallback belongs to THIS phase (it spawns the CLI), and
-  // only when the fast phase had no installed-package catalog to publish.
+  // The installed package remains the fast/normal catalog source. Separately,
+  // ask the CLI for its current default so Settings can show what "CLI default"
+  // means today without persisting that model id. If the installed reference is
+  // unavailable, the same fresh CLI read also remains the catalog fallback.
   const readInstalled = deps.readInstalledCatalog ?? readInstalledModelCatalog;
-  if (!readInstalled(resolution.path).ok) {
-    const cat = await adapter.readModelCatalog({ cliPath: resolution.path, env });
+  const installed = readInstalled(resolution.path);
+  const cat = await adapter.readModelCatalog({ cliPath: resolution.path, env });
+  if (cat.ok && isReliableConfigCatalogSource(cat.source)) {
+    patch.observed_default_model = cat.defaultModel;
+  }
+  if (!installed.ok) {
     const models = cat.ok ? cat.models : [];
     const catalog: SettingsCatalogView = {
       available: cat.ok,
@@ -456,7 +466,6 @@ export async function readSettingsCapabilities(root: string, deps: SettingsDeps 
       count: cat.ok ? models.length : 0,
       models,
       default_model: cat.defaultModel,
-      // A refresh time is reported ONLY when a catalog was actually published.
       refreshed_at: cat.ok ? now.toISOString() : null,
       error: cat.error
     };

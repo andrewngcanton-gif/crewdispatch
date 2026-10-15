@@ -3806,10 +3806,16 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
         cli: { available: true, version: "9.9.9-fake", error: null, checked: true },
         capabilities: { supports_effort: true, permission_modes: ["plan", "accept-edits", "yolo"], checked: true },
         catalog: null,
-        model_meta: null
+        model_meta: null,
+        observed_default_model: DEEPSEEK
       }
     });
     await waitForPage(page.evaluate, () => `document.getElementById("defaultEffort").disabled === false`, 30000, "the Reasoning control");
+    assert.equal(
+      await page.evaluate(`document.getElementById("defaultModel").options[0].textContent`),
+      `CLI default · ${DEEPSEEK}`,
+      "the empty selection explains the CLI's currently observed default without persisting it"
+    );
 
     // ---- The SELECTED model's own list, and nothing else. ----
     const deepseek = await effortState();

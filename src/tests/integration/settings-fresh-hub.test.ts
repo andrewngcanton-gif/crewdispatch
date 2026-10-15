@@ -429,10 +429,10 @@ test("Hub: no provider CLI is spawned at startup; a settings request runs the wo
 
 // ---------------------------------------------------------------------------
 // F (real path) — the INSTALLED PACKAGE supplies the model list + Free now while
-// a slow capability probe runs; `--list-models` is never needed
+// a slow capability/default-observation phase runs; the fast catalog never waits.
 // ---------------------------------------------------------------------------
 
-test("Hub: the installed Command Code package populates the model list and Free now without waiting for --list-models", { timeout: 120000 }, async () => {
+test("Hub: the installed Command Code package populates the model list immediately while the later phase may probe --list-models", { timeout: 120000 }, async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "jobquay-fresh-installed-"));
   const root = path.join(dir, "root");
   const prefixDir = path.join(dir, "npm-prefix");
@@ -440,7 +440,7 @@ test("Hub: the installed Command Code package populates the model list and Free 
   // A real installed-package layout: the shim sits beside node_modules/command-code.
   writeInstalledCommandCodePackage(prefixDir);
   // The CLI answers the PUBLIC probes SLOWLY (deliberately: a cold/hung CLI is
-  // the exact defect this guards) and does not implement --list-models at all.
+  // the exact defect this guards) and publishes no usable --list-models result.
   const PROBE_DELAY_MS = 4000;
   const fake = writeFakeCommandCodeCli(prefixDir, { name: "cmdc", probeDelayMs: PROBE_DELAY_MS, listModels: null });
   const env: NodeJS.ProcessEnv = {
@@ -505,9 +505,10 @@ test("Hub: the installed Command Code package populates the model list and Free 
     assert.ok(argvs.some((line) => line.includes("--help")), "the capability probe really ran");
     assert.equal(
       argvs.some((line) => line.includes("--list-models")),
-      false,
-      "the model dropdown never waits for cmdc --list-models"
+      true,
+      "the later phase observes the CLI default without delaying the already-rendered model dropdown"
     );
+    assert.equal(caps.body.patch.observed_default_model, null, "an unusable live list leaves the generic CLI-default label");
     console.log(
       `[settings-installed-package] catalog in ${fastElapsedMs}ms (no CLI process); capability evidence in ${capsElapsedMs}ms; CLI probes: ${JSON.stringify(argvs)}`
     );

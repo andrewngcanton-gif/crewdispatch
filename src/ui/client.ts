@@ -201,11 +201,9 @@ type SettingsFreshEnvelope<TView> = {
 };
 
 /**
- * The separate CAPABILITY phase of the Command Code settings read: the only
- * part that spawns the CLI (`--version` / `--help`), plus the CLI's own
- * `--list-models` fallback catalog when the fast phase had none to publish.
- * It is fetched AFTER the form is already rendered, so a cold or hung CLI can
- * never delay the model list or the Free-now labels.
+ * Later Command Code capability patch. The installed package still owns the
+ * fast model list; this phase also observes the CLI's current default model for
+ * display without persisting it as an explicit selection.
  */
 type SettingsCapabilityPatchEnvelope = {
   ok: true;
@@ -214,6 +212,7 @@ type SettingsCapabilityPatchEnvelope = {
     capabilities: { supports_effort: boolean; permission_modes: string[]; checked: true };
     catalog: SettingsView["catalog"] | null;
     model_meta: Record<string, { free?: boolean }> | null;
+    observed_default_model: string | null;
   };
   freshness: SettingsFreshness;
 };
@@ -1120,7 +1119,12 @@ function renderSettings(): void {
   fillPermissionMode();
   // The model selects come FIRST: each Reasoning select's options follow the
   // model THAT select points at, so both model lists must already be in place.
-  fillModelSelect(ui.defaultModel, draft.default_model, "CLI default model", "optional");
+  fillModelSelect(
+    ui.defaultModel,
+    draft.default_model,
+    view.catalog.default_model ? "CLI default · " + view.catalog.default_model : "CLI default model",
+    "optional"
+  );
   fillModelSelect(ui.fallbackModel, draft.rate_limit_fallback_model, "No rate-limit final fallback", "optional");
   fillCommandCodeEfforts();
   renderPermissionNote(ui.yoloWarning, "command-code", draft.permission_mode);
@@ -1325,11 +1329,15 @@ function runSettingsCapabilityFollowUp(view: SettingsView): void {
 function applySettingsCapabilityPatch(patch: SettingsCapabilityPatchEnvelope["patch"]): void {
   const view = settingsState.view;
   if (!view) return;
+  const catalog = patch.catalog ?? {
+    ...view.catalog,
+    default_model: patch.observed_default_model
+  };
   settingsState.view = {
     ...view,
     cli: { ...view.cli, version: patch.cli.version, error: patch.cli.error },
     capabilities: patch.capabilities,
-    catalog: patch.catalog ?? view.catalog,
+    catalog,
     model_meta: patch.model_meta ?? view.model_meta
   };
   renderSettings();

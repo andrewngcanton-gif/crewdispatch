@@ -13,9 +13,9 @@ Install and sign in to Command Code and/or WorkBuddy AI using the provider's own
 
 ## 2. Install CrewDispatch
 
-Windows: download and run `CrewDispatch-Setup-0.1.6.exe`. The installer is currently unsigned, so Microsoft Defender SmartScreen may show **Windows protected your PC**. If you downloaded it from the official GitHub Release, verify the published SHA-256 checksum, then use **More info → Run anyway**.
+Windows: download and run `CrewDispatch-Setup-0.1.7.exe`. The installer is currently unsigned, so Microsoft Defender SmartScreen may show **Windows protected your PC**. If you downloaded it from the official GitHub Release, verify the published SHA-256 checksum, then use **More info → Run anyway**.
 
-macOS: download and open `CrewDispatch-0.1.6.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
+macOS: download and open `CrewDispatch-0.1.7.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
 
 The macOS package is unsigned/not notarized. If macOS blocks it, use **Open Anyway** in System Settings → Privacy & Security.
 

@@ -312,7 +312,7 @@ function workBuddyAiProductSnapshotPath(baseEnv: NodeJS.ProcessEnv = process.env
   return path.join(configDir, "cache", "acc-product-config-v3.json");
 }
 
-function readWorkBuddyAiProductSnapshot(
+export function readWorkBuddyAiProductSnapshot(
   baseEnv: NodeJS.ProcessEnv = process.env
 ): { catalog: WorkBuddyAiControlCatalog; raw: string; path: string } | null {
   const filePath = workBuddyAiProductSnapshotPath(baseEnv);
@@ -372,6 +372,24 @@ export function parseWorkBuddyAiControlCatalog(raw: unknown): WorkBuddyAiControl
     }
   }
   return null;
+}
+
+const WORKBUDDY_ROUTING_PRESET_IDS = new Set([
+  "default-model",
+  "fast-model",
+  "balanced-model",
+  "primary-model",
+  "deep-model"
+]);
+
+/**
+ * Some WorkBuddy startup/offline states publish only the small routing-preset
+ * vocabulary instead of the account's explicit model catalog. That response is
+ * useful for the App's own routing UI, but it is NOT evidence that every
+ * explicit model (for example deepseek-v4.1-flash or hy3) is absent.
+ */
+export function isWorkBuddyRoutingPresetOnlyCatalog(models: readonly string[]): boolean {
+  return models.length > 0 && models.every((id) => WORKBUDDY_ROUTING_PRESET_IDS.has(id));
 }
 
 export function parseWorkBuddyAiHelpModels(raw: unknown): string[] {
@@ -440,9 +458,13 @@ export function readWorkBuddyAiPresentation(
   const accepted = new Set(acceptedModels);
   const snapshot = parseWorkBuddyAiProductSnapshot(liveRaw, now);
   if (snapshot) {
-    const offeredModels = snapshot.models.filter((id) => accepted.has(id));
+    // `acceptedModels` may come from a fresher live get_available_models read
+    // than this cached product snapshot. Keep the LIVE accepted set intact and
+    // use the snapshot only to enrich rows it knows (labels, promotion/effort
+    // metadata). A new live model must never disappear merely because the cache
+    // predates it.
     return {
-      offeredModels: offeredModels.length ? offeredModels : [...acceptedModels],
+      offeredModels: [...acceptedModels],
       modelMeta: snapshot.modelMeta,
       nextPromotionBoundaryAt: snapshot.nextPromotionBoundaryAt,
       source: "WorkBuddy product snapshot",
@@ -655,8 +677,12 @@ export function resolveWorkBuddyAiCli(input: CliResolveInput = {}): CliResolutio
 }
 
 export interface WorkBuddyAiAdapterDeps extends WorkBuddyAiEffortFallbackDeps {
-  /** Test seam: the local Official App snapshot reader (defaults to the real local read). */
+  /** Test seam: the local Official App snapshot reader used by effort evidence. */
   readProductSnapshot?: (env: NodeJS.ProcessEnv) => WorkBuddyAiControlCatalog | null;
+  /** Test seam for the live read-only get_available_models control request. */
+  readLiveCatalog?: (input: CliProbeInput) => { catalog: WorkBuddyAiControlCatalog; raw: string } | null;
+  /** Test seam for the provider-owned cached Product Configuration snapshot. */
+  readProductSnapshotEvidence?: (env: NodeJS.ProcessEnv) => { catalog: WorkBuddyAiControlCatalog; raw: string } | null;
   /**
    * Platform whose runner produced the stream/exit codes. Defaults to the real
    * platform: the Desktop bridge (and therefore its terminal exit codes) runs
@@ -754,43 +780,58 @@ export function createWorkBuddyAiAdapter(deps: WorkBuddyAiAdapterDeps = {}): Pro
     async readModelCatalog(input: CliProbeInput): Promise<ModelCatalogResult> {
       const isolated = { ...input, env: workBuddyAiProfileEnv(input.env ?? process.env) };
 
-      // Preferred source: WorkBuddy's own resolved Product Configuration snapshot.
-      // WorkBuddy writes this atomically under ~/.workbuddy-ai/cache and refreshes
-      // it when auth/product configuration changes. The cli agent's ordered model
-      // list is the product's own allowlist, so no separately installed CodeBuddy
-      // CLI is required.
-      const snapshot = readWorkBuddyAiProductSnapshot(isolated.env);
-      if (snapshot) {
-        return {
-          ok: true,
-          source: "workbuddy-product-snapshot",
-          models: snapshot.catalog.models,
-          defaultModel: null,
-          raw: snapshot.raw,
-          error: null
-        };
-      }
-
-      // First fallback: ask the bundled WorkBuddy CLI itself. Some builds expose
-      // only the four routing presets here, but it remains useful when the product
-      // snapshot has not been created yet. No prompt is submitted.
-      const live = readBundledWorkBuddyAiControlCatalog(isolated);
-      if (live) {
+      // FIRST ask the installed WorkBuddy CLI for its CURRENT account-facing
+      // model list. Settings/job setup calls this method again for every fresh
+      // read/attempt, so recovering network/auth state can recover the catalog
+      // without restarting CrewDispatch. A startup/offline response containing
+      // only routing presets is deliberately NOT treated as proof that explicit
+      // models disappeared.
+      const live = deps.readLiveCatalog
+        ? deps.readLiveCatalog(isolated)
+        : queryAvailableModels(isolated.cliPath, isolated.env ?? process.env, {
+            platform: isolated.platform ?? process.platform,
+            comSpec: isolated.comSpec,
+            cwd: isolated.cwd,
+            timeoutMs: isolated.timeoutMs
+          });
+      if (live && !isWorkBuddyRoutingPresetOnlyCatalog(live.catalog.models)) {
         return {
           ok: true,
           source: "cli-control-models",
-          models: live.models,
+          models: live.catalog.models,
           defaultModel: null,
           raw: live.raw,
           error: null
         };
       }
 
+      // Offline/cold-start fallback: WorkBuddy's own atomically written Product
+      // Configuration snapshot. It can keep a known configuration usable while
+      // the live query is unavailable, but a snapshot that itself contains only
+      // routing presets is equally unable to prove explicit-model absence.
+      const snapshot = deps.readProductSnapshotEvidence
+        ? deps.readProductSnapshotEvidence(isolated.env ?? process.env)
+        : readWorkBuddyAiProductSnapshot(isolated.env);
+      if (snapshot && !isWorkBuddyRoutingPresetOnlyCatalog(snapshot.catalog.models)) {
+        return {
+          ok: true,
+          source: "workbuddy-product-snapshot",
+          models: snapshot.catalog.models,
+          defaultModel: null,
+          raw: snapshot.raw,
+          error: live
+            ? "WorkBuddy's live model query returned routing presets only; using the provider-owned cached product snapshot until a later fresh read succeeds."
+            : "WorkBuddy's live model query was unavailable; using the provider-owned cached product snapshot until a later fresh read succeeds."
+        };
+      }
+
       // Conservative final fallback: the resolved WorkBuddy CLI's public help.
+      // The same routing-preset-only shape is NOT an authoritative explicit
+      // catalog and must never turn a saved DeepSeek/HY model into model_stale.
       const caps = await base.probeCapabilities(isolated);
       const help = caps.helpText ?? "";
       const published = parseWorkBuddyAiHelpModels(help);
-      if (published.length > 0) {
+      if (published.length > 0 && !isWorkBuddyRoutingPresetOnlyCatalog(published)) {
         return {
           ok: true,
           source: "cli-help-models",
@@ -805,8 +846,8 @@ export function createWorkBuddyAiAdapter(deps: WorkBuddyAiAdapterDeps = {}): Pro
         source: "unavailable",
         models: [],
         defaultModel: null,
-        raw: help || null,
-        error: "WorkBuddy AI model catalog was unavailable from its product snapshot, bundled get_available_models, and --help."
+        raw: live?.raw || snapshot?.raw || help || null,
+        error: "WorkBuddy AI did not publish a current explicit-model catalog. Routing presets alone are not evidence that configured explicit models are unavailable; a later fresh read will retry the live provider query."
       };
     },
     /**

@@ -29,3 +29,21 @@ test("Windows NSIS Modern UI declares English after all page macros", () => {
     assert.ok(pageIndex < languageIndex, `NSIS page declaration must precede MUI_LANGUAGE: ${page}`);
   }
 });
+
+
+test("Windows installer publishes complete Installed Apps version metadata", () => {
+  const script = fs.readFileSync(INSTALLER_SCRIPT, "utf8");
+  for (const required of [
+    '!define UNINSTALL_KEY "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\CrewDispatch"',
+    'WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayName" "CrewDispatch"',
+    'WriteRegStr HKCU "${UNINSTALL_KEY}" "DisplayVersion" "${VERSION}"',
+    'WriteRegStr HKCU "${UNINSTALL_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"',
+    'WriteRegStr HKCU "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"',
+    'WriteRegStr HKCU "${UNINSTALL_KEY}" "UninstallString"',
+    'WriteRegStr HKCU "${UNINSTALL_KEY}" "QuietUninstallString"',
+    'WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoModify" 1',
+    'WriteRegDWORD HKCU "${UNINSTALL_KEY}" "NoRepair" 1'
+  ]) {
+    assert.ok(script.includes(required), `missing Installed Apps metadata contract: ${required}`);
+  }
+});

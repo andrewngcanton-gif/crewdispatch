@@ -13,6 +13,7 @@ import { describeCommandCodeCliSource } from "../providers/command-code/discover
 import {
   createWorkBuddyAiAdapter,
   readWorkBuddyAiPresentation,
+  readWorkBuddyAiProductSnapshot,
   workBuddyAiProfileEnv
 } from "../providers/workbuddy-ai/index";
 import {
@@ -21,6 +22,7 @@ import {
   type WorkBuddyAiReasoningMeta
 } from "../providers/workbuddy-ai/effort";
 import type { ModelDiagnostic } from "./select";
+import type { ProviderAdapter } from "../providers/provider";
 import {
   ConfigError,
   defaultConfig,
@@ -354,6 +356,8 @@ export function loadWorkBuddyAiRuntimeConfigResult(root: string): LoadConfigResu
 }
 
 export interface ReadWorkBuddyAiSettingsDeps {
+  /** Injectable provider adapter (tests). Defaults to the production WorkBuddy adapter. */
+  adapter?: ProviderAdapter;
   env?: NodeJS.ProcessEnv;
   now?: () => Date;
   /**
@@ -381,7 +385,7 @@ export async function readWorkBuddyAiSettings(
 
   const env = workBuddyAiProfileEnv(deps.env ?? process.env);
   const now = (deps.now ?? (() => new Date()))();
-  const adapter = createWorkBuddyAiAdapter();
+  const adapter = deps.adapter ?? createWorkBuddyAiAdapter();
   const resolution = adapter.resolveCli(cfg.config.cliPath ? { configPath: cfg.config.cliPath, env } : { env });
   const cli = {
     available: false,
@@ -424,7 +428,12 @@ export async function readWorkBuddyAiSettings(
     catalog.refreshed_at = cat.ok ? now.toISOString() : null;
     catalog.error = cat.error;
     if (cat.ok) {
-      const presentation = readWorkBuddyAiPresentation(resolution.path, cat.models, cat.raw, now);
+      // A successful live get_available_models read is the authoritative set of
+      // CURRENT selectable ids. Enrich those ids with the provider-owned product
+      // snapshot's promotion/reasoning metadata when available, without letting
+      // the older cache shrink or replace the live list.
+      const snapshot = cat.source === "cli-control-models" ? readWorkBuddyAiProductSnapshot(env) : null;
+      const presentation = readWorkBuddyAiPresentation(resolution.path, cat.models, snapshot?.raw ?? cat.raw, now);
       offeredModels = presentation.offeredModels;
       modelMeta = presentation.modelMeta;
       // DS-ONLY effort fallback: when the Official App snapshot publishes a

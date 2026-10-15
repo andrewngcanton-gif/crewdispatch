@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "31ebf11023c26df6bdf976157dd65258c1d270c3",
+  "sourceCommit": "13cb1e3c01efaa648cba53e7cb9e3624043a0723",
   "sourceDirty": false,
   "files": [
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": ".github/workflows/installer-ci.yml",
-      "sha256": "ca792349703ce1281e3535203859bd7c3523cd721dd35b6ee3ec3fc229385c1c"
+      "sha256": "c8c608070bae9e4db0ee413029595bdb3b44648c80d39f4ebaebe68a3b1f53f7"
     },
     {
       "path": ".gitignore",
@@ -25,7 +25,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "114b606317e34bd5604d35d50b074591c6972ec382fb8f05e9541debc55f49da"
+      "sha256": "42a5441998f3caeea5cafa48e32c5cb4fd7a9136a732df76775786cc43ef6687"
     },
     {
       "path": "CONTRIBUTING.md",
@@ -37,7 +37,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "76cce7597687ee0f83f86cedd1e6adcd3c473e8bf472b54f926f34eb840e451a"
+      "sha256": "7e6a2a05e8194f916cca12a23a0e95f7f805ad56ba51a6fbf07da6934f722681"
     },
     {
       "path": "THIRD_PARTY_NOTICES",
@@ -53,7 +53,7 @@
     },
     {
       "path": "docs/getting-started.md",
-      "sha256": "039437e3ae1ea36081f559ccd3c2bea684da9985e1c83b033d92598d581308e4"
+      "sha256": "768ed34a48ad5fb12d4f9df10ec6873b2973eaea5526e642d39c838eba3b4249"
     },
     {
       "path": "docs/uninstall.md",
@@ -77,15 +77,15 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "c07bdcfbbc2c3484bcfecf8a8d9c1c34012bbf1ef8f0606fc08af060da0c7469"
+      "sha256": "de7ebc27060e434591016d5067e368d5e83d25de7974c160f838078454ca5b06"
     },
     {
       "path": "package.json",
-      "sha256": "7bebfe74ed8a4dbb56d19c2ca604ac73a9d319cdf6a21615dcd2334c5282de4b"
+      "sha256": "9da5a5aea39db7051ffc16788edb13841714fb48dbe6d204141edc540b29f852"
     },
     {
       "path": "plugins/crewdispatch/.codex-plugin/plugin.json",
-      "sha256": "6fdad2bebe44138a81afe51b47e15e2042177a3fe369d0ade737b521f8d7f774"
+      "sha256": "b2908f524f9bec3905b8fc38422901013bf53dd7a7b15c5c8caea35bf9f8b7b7"
     },
     {
       "path": "plugins/crewdispatch/mcp.template.json",
@@ -94,6 +94,10 @@
     {
       "path": "plugins/crewdispatch/skills/crewdispatch/SKILL.md",
       "sha256": "e376e13911213b81c77ea33347dae7640cb3e30598570613e8ca878e9dffac88"
+    },
+    {
+      "path": "scripts/assert-windows-installed-app.ps1",
+      "sha256": "d161d571b9522c006cef4247d65fa21f7f958609316810365f34ed71eb76f322"
     },
     {
       "path": "scripts/build-macos-helper.cjs",
@@ -105,7 +109,7 @@
     },
     {
       "path": "scripts/build-release-candidate.cjs",
-      "sha256": "5c45667452aa940aa6ec54040d992c5a18198243e47e54df41f333823b8da3e1"
+      "sha256": "86cd63df70a88f86e72a5c9bdcd1d8e71a99175ea8ed097ac234f7e418d8608f"
     },
     {
       "path": "scripts/build-windows-installer.cjs",
@@ -281,11 +285,11 @@
     },
     {
       "path": "src/config/settings.ts",
-      "sha256": "dd0ca7461e8a65159e8ee9c7c49fb99694309ce57644d6eb1056fe8bb7220b59"
+      "sha256": "4f0a137784b2fc13b872d62606a70aace429b7e577ed3f30a31417dc2f628a10"
     },
     {
       "path": "src/config/workbuddy-ai.ts",
-      "sha256": "55c08a823dc20569718b3c70540c0134d994dc326d206559d492efa4b25fe55d"
+      "sha256": "365fcf9a35da2c41843a82cd5d6c4025fb00c2e1b375a9dcc6e1dcb9f544b01e"
     },
     {
       "path": "src/daemon/client.ts",
@@ -429,7 +433,7 @@
     },
     {
       "path": "src/mcp/server.ts",
-      "sha256": "f4f7e0cf94a082b4a1998b9e8c16d91bbcc40d07d903622f69993463b3574d5d"
+      "sha256": "cb843463a0567fa6fa897ca153d2eece93dafb88a8c58dd1d1e9c1591d6eca7d"
     },
     {
       "path": "src/mcp/tools.ts",
@@ -529,7 +533,7 @@
     },
     {
       "path": "src/providers/workbuddy-ai/index.ts",
-      "sha256": "4d1d931fd8e5fc76edbaaca25fd7347026a3381b6d9489bb9936508313922473"
+      "sha256": "95d0fc7d0a158acee7bcfdf6d388689898adc168cad9b5c2686922d58d77c891"
     },
     {
       "path": "src/providers/workbuddy-ai/runtime-lifecycle.ts",
@@ -569,7 +573,7 @@
     },
     {
       "path": "src/tests/e2e/macos-command-code-real.e2e.ts",
-      "sha256": "19de5ba32723cf5a29c20a0ee47eac7067bcecc2f10a57426f2b6bfd743a36d8"
+      "sha256": "56e0d7b49519abe742026783f208add1314835140593b2b2fc474c9f944212b9"
     },
     {
       "path": "src/tests/e2e/macos-lifecycle-probe.e2e.ts",
@@ -685,7 +689,7 @@
     },
     {
       "path": "src/tests/integration/claude-packaged-install.test.ts",
-      "sha256": "0121c71f2924f4ec58daae7fa77cd09c82a57356238c20424e320b7c01b15c4a"
+      "sha256": "906dbe710676485a9869071d659e05a05a2d1d6553e912f77325d82485a94149"
     },
     {
       "path": "src/tests/integration/claude-recovery-real.test.ts",
@@ -765,7 +769,7 @@
     },
     {
       "path": "src/tests/integration/hub-ui-browser.test.ts",
-      "sha256": "a8bacb600eaa0a1db0edaa05b1a88d450a9e508de4989c5995ded51cf3378a43"
+      "sha256": "826a6482910e5ddd0ff24a4ea4535e5a473c9981b87b69a5f08d039c5879a0b8"
     },
     {
       "path": "src/tests/integration/hub-ui-coherence.test.ts",
@@ -793,7 +797,7 @@
     },
     {
       "path": "src/tests/integration/macos-dashboard-lifecycle.test.ts",
-      "sha256": "8c00ebf62d954e0295dfac3ea8a1537c9496aa66d6412d0d194766c20cabdf4a"
+      "sha256": "201481f11075878e4be9f55cb886961a521b4b2f59fe3b01a88704ed995c510d"
     },
     {
       "path": "src/tests/integration/macos-data-root.test.ts",
@@ -837,7 +841,7 @@
     },
     {
       "path": "src/tests/integration/release-candidate.test.ts",
-      "sha256": "a93ad0644473b43caab4fc3eb72db86a101539dbdfbfee484d251700fec42d4e"
+      "sha256": "b6185dad9858aabf381a2ca0e790ae3c6273a23b5b9df40b572d651f89474d47"
     },
     {
       "path": "src/tests/integration/schema-rollback-mcp.test.ts",
@@ -845,7 +849,7 @@
     },
     {
       "path": "src/tests/integration/settings-fresh-hub.test.ts",
-      "sha256": "921a579842222efeaf6b30900bce68cc5537fb8427b6dc640f056f754bec3b66"
+      "sha256": "22ad42deb3fc7b1c06d995b24de83ae85fe7e548a8a4786f2101b54d5edf6ba5"
     },
     {
       "path": "src/tests/integration/settings-mcp.test.ts",
@@ -921,7 +925,7 @@
     },
     {
       "path": "src/tests/unit/codex-client-install.test.ts",
-      "sha256": "b908905982d4715b8acd53568e5409e1fe2625a218df96ffd5f233e62e37812b"
+      "sha256": "abd991a84e2f7c50eed7ba9140d6bc680af9f93a7cd3aee412444e1a0226ec5c"
     },
     {
       "path": "src/tests/unit/command-code-acp-bridge.test.ts",
@@ -953,7 +957,7 @@
     },
     {
       "path": "src/tests/unit/config-settings.test.ts",
-      "sha256": "e47bd07df985aaa27bba152a220f86efca22924786fa516bd2dd4087ddc523f8"
+      "sha256": "b7cd74729f351a94da1caf2257e8b885b10414ad5f05c6a0ed6d8d8ec9f9d689"
     },
     {
       "path": "src/tests/unit/daemon-dashboard-ensure.test.ts",
@@ -1093,7 +1097,7 @@
     },
     {
       "path": "src/tests/unit/windows-installer-ui.test.ts",
-      "sha256": "073c1b49c9620e5e71e8fb894af7d83d8b44d00ec731bc472a367aecab8c7026"
+      "sha256": "1f6844835e24dd2b93a773b8939b2093c13f36eeee5aa2112ac7c22685183242"
     },
     {
       "path": "src/tests/unit/workbuddy-acp-normalizer.test.ts",
@@ -1105,7 +1109,11 @@
     },
     {
       "path": "src/tests/unit/workbuddy-ai-provider.test.ts",
-      "sha256": "9180fa6c14e9454afe214c9adf4d16ff1bc6ca26d9217713134f2730b6ac7cfb"
+      "sha256": "09b89aa6a8e1687104a42e55c8d1d765d9ffcd03b77b97b3c0e3c74daff9d970"
+    },
+    {
+      "path": "src/tests/unit/workbuddy-ai-settings.test.ts",
+      "sha256": "7021cbb17e992d0a95f33b936d76e16930034d94bb9cebb6b62b31d5956a3802"
     },
     {
       "path": "src/tests/unit/workbuddy-approval-channel.test.ts",
@@ -1129,7 +1137,7 @@
     },
     {
       "path": "src/ui/client.ts",
-      "sha256": "999f8df3502d78ff51fbe47fc5e535dc8efc47021594f3524aaddd088913eac6"
+      "sha256": "a6ee18f7d3ad936823584fa756e43c5991759742e6a9e6fbda11d7294061c588"
     },
     {
       "path": "src/ui/page.ts",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7 — 2026-10-15
+
+Provider model-catalog recovery patch release.
+
+- WorkBuddy AI no longer mistakes routing presets for the full model catalog, so offline/cold startup cannot falsely mark configured DeepSeek/HY models missing; later fresh reads retry live provider evidence automatically.
+- Command Code keeps its existing model-catalog behavior and now shows which current CLI model the `CLI default` selection means, without turning that observed default into an explicit saved model.
 ## 0.1.6 — 2026-10-15
 
 Command Code reasoning visibility patch release.

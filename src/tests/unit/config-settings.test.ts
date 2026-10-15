@@ -433,11 +433,15 @@ test("the catalog phase populates the model list without ever starting the capab
   }
 });
 
-test("the capability phase reports the CLI's own evidence and never re-publishes an installed catalog", async () => {
+test("the capability phase observes the CLI's current default without replacing the installed catalog", async () => {
   const fixture = installedFixture();
   const root = tmpRoot();
   try {
-    const adapter = installedAdapter(fixture, { capabilities: async () => INSTALLED_CAPS });
+    let catalogCalls = 0;
+    const adapter = installedAdapter(fixture, {
+      capabilities: async () => INSTALLED_CAPS,
+      onCatalogCall: () => { catalogCalls += 1; }
+    });
     updateConfig(root, { cliPath: fixture.shim });
     const result = await readSettingsCapabilities(root, { adapter, env: {} });
     assert.equal(result.ok, true);
@@ -449,6 +453,8 @@ test("the capability phase reports the CLI's own evidence and never re-publishes
     assert.equal(result.patch.cli.error, null);
     assert.equal(result.patch.catalog, null, "an installed-package catalog is not re-published by the capability phase");
     assert.equal(result.patch.model_meta, null, "the installed Free-now evidence is not re-derived here");
+    assert.equal(result.patch.observed_default_model, "m/a", "the later CLI read supplies the display-only current default");
+    assert.equal(catalogCalls, 1, "the later settings phase asks --list-models once for the current default");
   } finally {
     fixture.cleanup();
     fs.rmSync(root, { recursive: true, force: true });
@@ -471,6 +477,7 @@ test("the capability phase carries the --list-models fallback only when the inst
     assert.equal(result.patch.catalog?.source, "cli-list-models", "the CLI catalog remains the documented fallback");
     assert.deepEqual(result.patch.catalog?.models, ["m/a", "m/b", "m/c"]);
     assert.equal(result.patch.model_meta?.["m/b"]?.free, true, "the fallback keeps the CLI's own FREE evidence");
+    assert.equal(result.patch.observed_default_model, "m/a");
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
     fs.rmSync(root, { recursive: true, force: true });

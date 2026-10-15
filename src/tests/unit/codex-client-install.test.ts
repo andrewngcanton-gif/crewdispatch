@@ -117,7 +117,7 @@ test("Codex caller install registers the local marketplace/plugin and uninstall 
     const runCli = (args: string[]): CodexCliResult => {
       calls.push([...args]);
       if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "add") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
-      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID, version: "0.1.6" });
+      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID, version: "0.1.7" });
       if (args[0] === "plugin" && args[1] === "list") {
         return ok({ installed: [{ pluginId: CODEX_PLUGIN_ID, marketplaceSource: { sourceType: "local", source: fx.target } }] });
       }
