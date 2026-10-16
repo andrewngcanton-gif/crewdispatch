@@ -841,10 +841,10 @@ const WORKBUDDY_LOADING_MESSAGE = PROVIDER_INITIAL_LOADING_MESSAGE;
  * The ONE initial loading rendering for a provider card. It is shown only when
  * no usable provider view exists yet; later fresh reads keep the known form.
  *
- * For Command Code this covers only the process-free CATALOG phase, so it
- * clears in milliseconds even when the CLI is cold or hung. The slow capability
- * phase is NOT part of this state: it runs after the form is rendered and
- * reports itself on the permission/effort controls.
+ * For Command Code the card-level state covers the process-free CATALOG phase.
+ * After the catalog renders, the same first-load message stays visible inline
+ * while the initial capability phase runs, so a fast catalog cannot make the
+ * user miss the loading feedback. The model form itself is not blocked.
  *
  * WorkBuddy AI's first-read line stays at normal weight, so it
  * carries a provider-specific modifier instead of weakening the shared
@@ -1134,17 +1134,28 @@ function renderSettings(): void {
   renderPermissionNote(ui.yoloWarning, "command-code", draft.permission_mode);
   ui.saveSettings.disabled = settingsControlsLocked() || !settingsState.dirty;
 
+  const capabilityPending = view.capabilities.checked === false;
   const cliProblem = !view.cli.available || !!view.cli.error;
-  ui.cliInfo.classList.toggle("hidden", !cliProblem);
-  if (cliProblem) {
-    // The model list may be perfectly usable from the installed package while
-    // the CLI's capability probe is unavailable: say exactly which part failed.
-    const cliLines = [view.cli.available ? "Command Code capability check failed." : "Command Code is unavailable."];
-    if (view.cli.error) cliLines.push(view.cli.error);
-    showLines(ui.cliInfo, cliLines);
-    ui.cliInfo.classList.add("warning");
+  if (capabilityPending) {
+    // The process-free catalog can answer too quickly for the card-level first
+    // loading state to be perceptible. Keep the SAME first-load message visible
+    // while the initial capability read runs, without blocking the model form.
+    showLines(ui.cliInfo, [COMMAND_CODE_LOADING_MESSAGE]);
+    ui.cliInfo.classList.remove("hidden", "warning");
+    ui.cliInfo.classList.add("loading");
   } else {
-    ui.cliInfo.classList.remove("warning");
+    ui.cliInfo.classList.remove("loading");
+    ui.cliInfo.classList.toggle("hidden", !cliProblem);
+    if (cliProblem) {
+      // The model list may be perfectly usable from the installed package while
+      // the CLI's capability probe is unavailable: say exactly which part failed.
+      const cliLines = [view.cli.available ? "Command Code capability check failed." : "Command Code is unavailable."];
+      if (view.cli.error) cliLines.push(view.cli.error);
+      showLines(ui.cliInfo, cliLines);
+      ui.cliInfo.classList.add("warning");
+    } else {
+      ui.cliInfo.classList.remove("warning");
+    }
   }
 
   const catalogProblem = !view.catalog.reliable || !!view.catalog.error;

@@ -1666,6 +1666,13 @@ test("the installed-package model list renders while the capability probe is sti
     // be visible: ONLY the configured values, plain labels, both controls
     // disabled — never a fabricated "the CLI has no modes" claim and never a
     // transient "check in progress" suffix on the value.
+    const firstLoadStatus = await page.evaluate(`(() => {
+      const el = document.getElementById("cliInfo");
+      return { text: el.textContent || "", hidden: el.classList.contains("hidden"), loading: el.classList.contains("loading") };
+    })()`);
+    assert.equal(firstLoadStatus.hidden, false, "Command Code keeps visible first-load feedback while initial capability evidence is pending");
+    assert.equal(firstLoadStatus.loading, true, "Command Code first-load feedback keeps the loading spinner while capability evidence is pending");
+    assert.match(firstLoadStatus.text, /Loading configuration.*First load may take a moment/, "Command Code uses the same concise first-load message as WorkBuddy AI");
     assert.equal(
       await effortEnabled(),
       false,
@@ -1710,6 +1717,12 @@ test("the installed-package model list renders while the capability probe is sti
       `the reasoning choices are restored from capability evidence (got ${JSON.stringify(recoveredEffort.values)})`
     );
     assert.equal(recoveredEffort.disabled, false, "the Reasoning select recovers editability from capability evidence");
+    const recoveredStatus = await page.evaluate(`(() => {
+      const el = document.getElementById("cliInfo");
+      return { hidden: el.classList.contains("hidden"), loading: el.classList.contains("loading") };
+    })()`);
+    assert.equal(recoveredStatus.loading, false, "the Command Code loading indicator clears when initial capability evidence arrives");
+    assert.equal(recoveredStatus.hidden, true, "healthy Command Code capability evidence leaves no permanent status row");
     // The capability patch must not have disturbed the catalog it was patched into.
     const afterCaps = await modelOptions();
     assert.ok(
