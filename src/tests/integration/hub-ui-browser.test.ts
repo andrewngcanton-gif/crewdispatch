@@ -20,7 +20,7 @@
 //      provider read runs, no previous/in-session view is rendered behind it,
 //      the fresh response restores Free-now evidence, and a failed read locks
 //      the card honestly. WorkBuddy AI's waiting line is the plain
-//      `loading...` copy at normal weight, while Command Code keeps its own
+//      shared first-load copy at normal weight, while Command Code keeps the same
 //      copy and shared semibold styling. Command Code's read is two phases, so
 //      the model list renders while the CLI capability probe is still hanging
 //      (T6).
@@ -252,8 +252,9 @@ async function waitForHubUrl(handle: HubHandle): Promise<string> {
 }
 
 /** The exact loading copy the shipped client renders per provider. */
-const COMMAND_CODE_LOADING_MESSAGE = "Loading Command Code…";
-const WORKBUDDY_LOADING_MESSAGE = "loading...";
+const PROVIDER_INITIAL_LOADING_MESSAGE = "Loading configuration… First load may take a moment.";
+const COMMAND_CODE_LOADING_MESSAGE = PROVIDER_INITIAL_LOADING_MESSAGE;
+const WORKBUDDY_LOADING_MESSAGE = PROVIDER_INITIAL_LOADING_MESSAGE;
 
 async function waitFor(condition: () => boolean, timeoutMs: number, label: string): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -973,7 +974,7 @@ test("Settings refreshes providers without blanking an already-loaded form", { t
     };
 
     /**
-     * The WorkBuddy AI waiting state: exactly the plain `loading...` line at
+     * The WorkBuddy AI first-read state: exactly the shared configuration line at
      * normal weight (400), measured from the computed style of the VISIBLE
      * line while the provider read is still pending.
      */
@@ -981,7 +982,7 @@ test("Settings refreshes providers without blanking an already-loaded form", { t
       const lines = await page.evaluate(
         `Array.from(document.getElementById("wbCliInfo").children).map((el) => el.textContent || "")`
       );
-      assert.deepEqual(lines, [WORKBUDDY_LOADING_MESSAGE], "WorkBuddy AI shows exactly the plain loading... line");
+      assert.deepEqual(lines, [WORKBUDDY_LOADING_MESSAGE], "WorkBuddy AI shows exactly the first-load configuration message");
       assert.doesNotMatch(String(lines[0]), /5[–-]20/, "WorkBuddy AI must not claim a 5–20 second bound");
       assert.equal(
         await page.evaluate(`getComputedStyle(document.getElementById("wbCliInfo").firstElementChild).fontWeight`),
@@ -1724,9 +1725,9 @@ test("the installed-package model list renders while the capability probe is sti
       `[hub-ui-settings-prompt] EV2 the CLI's own permission modes were patched in ${capsElapsedMs}ms after opening (${JSON.stringify(recoveredPermission.values)}), without disturbing the model list`
     );
 
-    // ---- POST-SAVE: the save's own fresh read is the CATALOG phase again, so
-    //      the controls must return to the plain/disabled pending state until
-    //      its separate capability read lands, then recover. ----
+    // ---- POST-SAVE: once capability evidence is known, the background catalog
+    //      + capability verification must not disable the controls again. Saving
+    //      ends at the successful config write, not when the slow probe finishes. ----
     await page.evaluate(`(() => {
       const select = document.getElementById("defaultModel");
       select.value = "stealth/space-bunny-alpha";
@@ -1736,41 +1737,22 @@ test("the installed-package model list renders while the capability probe is sti
     await page.evaluate(`document.getElementById("saveSettings").click()`);
     await waitForPage(
       page.evaluate,
-      () =>
-        `(() => {
-          const permission = document.getElementById("permissionMode");
-          const effort = document.getElementById("defaultEffort");
-          return permission.disabled && permission.options.length === 1 && permission.options[0].value === "yolo"
-            && effort.disabled && effort.options.length === 1;
-        })()`,
-      60000,
-      "the post-save capability-pending presentation"
+      () => `document.getElementById("settingsMessage").innerText !== "Saving…" && document.getElementById("defaultEffort").disabled === false`,
+      15000,
+      "the saved form to unlock before the slow post-save capability probe finishes"
     );
-    const postSavePendingPermission = await selectState("permissionMode");
-    const postSavePendingEffort = await selectState("defaultEffort");
-    assert.deepEqual(
-      postSavePendingPermission.texts,
-      ["yolo"],
-      "after a save the Permission select returns to ONLY the saved mode, plain, while its capability read is pending"
-    );
-    assert.equal(postSavePendingPermission.disabled, true, "the post-save pending Permission select is disabled");
-    assert.deepEqual(
-      postSavePendingEffort.texts,
-      ["Unspecified (Provider default)"],
-      "after a save the Reasoning select returns to ONLY the saved provider-default value while pending"
-    );
-    assert.equal(postSavePendingEffort.disabled, true, "the post-save pending Reasoning select is disabled");
-    await waitForPage(page.evaluate, () => `document.getElementById("defaultEffort").disabled === false`, 120000, "the post-save capability evidence to be patched in");
     const postSavePermission = await selectState("permissionMode");
-    assert.equal(postSavePermission.disabled, false, "the post-save capability evidence restores editability");
-    assert.deepEqual(postSavePermission.values.sort(), ["accept-edits", "plan", "yolo"], "the post-save capability evidence restores the real choices");
+    const postSaveEffort = await selectState("defaultEffort");
+    assert.equal(postSavePermission.disabled, false, "post-save background verification keeps Permission editable");
+    assert.deepEqual(postSavePermission.values.sort(), ["accept-edits", "plan", "yolo"], "known Permission choices remain available during post-save verification");
+    assert.equal(postSaveEffort.disabled, false, "post-save background verification keeps Reasoning editable");
     assert.equal(
       await page.evaluate(`document.getElementById("defaultModel").value`),
       "stealth/space-bunny-alpha",
-      "the saved model survives the post-save capability read"
+      "the saved model stays visible while the post-save provider verification runs"
     );
     console.log(
-      "[hub-ui-settings-prompt] EV3 post-save: the card returned to the plain/disabled pending presentation and recovered when the capability evidence landed"
+      "[hub-ui-settings-prompt] EV3 post-save: Saving finished immediately after persistence and known Permission/Reasoning stayed usable during background verification"
     );
   } finally {
     if (cdp) cdp.close();
@@ -1830,7 +1812,7 @@ test("the installed-package model list renders while the capability probe is sti
  *     keeps the plain/disabled presentation and is surfaced by the EXISTING
  *     higher-level status line, not through control copy.
  */
-test("Command Code capability pending keeps Permission/Reasoning plain and disabled until evidence arrives (open / switch / post-save)", { timeout: 240000 }, async (t) => {
+test("Command Code first capability read blocks controls, but later refreshes keep known Permission/Reasoning usable", { timeout: 240000 }, async (t) => {
   const browserPath = findChromium();
   if (!browserPath) {
     t.skip("no Chromium browser (Chrome/Edge) available; runtime browser evidence not produced");
@@ -2033,10 +2015,10 @@ test("Command Code capability pending keeps Permission/Reasoning plain and disab
       `[hub-ui-capability-pending] EV1 initial open: plain/disabled pending, then real choices restored (${JSON.stringify(openedPermission.values)})`
     );
 
-    // ---- 2) PROVIDER SWITCH-BACK: a new catalog phase re-enters the pending
-    //         presentation; saving inside that window must submit the
-    //         configured draft values, and the post-save read must show the
-    //         pending presentation again before its separate evidence lands. ----
+    // ---- 2) PROVIDER SWITCH-BACK: once capability evidence has been learned,
+    //         a later catalog refresh must NOT disable Permission/Reasoning.
+    //         The fresh capability phase replaces the known evidence when it
+    //         arrives, but the controls stay usable while that happens. ----
     await selectProvider("workbuddy-ai");
     await waitFor(() => wb.calls === 1, 10000, "the WorkBuddy read");
     wb.settleAt(0, {
@@ -2048,8 +2030,9 @@ test("Command Code capability pending keeps Permission/Reasoning plain and disab
     await selectProvider("command-code");
     await waitFor(() => cc.catalogCalls === 2, 10000, "the switch-back catalog read");
     cc.settleCatalog(1, { ok: true, view: pendingCatalogView("cc/model-a") });
-    await waitForPendingPresentation();
-    await assertPendingPresentation("provider switch-back");
+    await waitForRecovery();
+    assert.equal((await selectState("defaultEffort")).disabled, false, "provider switch-back keeps Reasoning selectable while fresh capability evidence is pending");
+    assert.equal((await selectState("permissionMode")).disabled, false, "provider switch-back keeps Permission selectable while fresh capability evidence is pending");
 
     // Editing the FALLBACK model (not the default one) proves the two
     // Reasoning selections are independent: the default-model effort must
@@ -2057,26 +2040,32 @@ test("Command Code capability pending keeps Permission/Reasoning plain and disab
     // follows its own (here unset) configuration.
     await setFallbackModel("cc/model-b");
     await page.evaluate(`document.getElementById("saveSettings").click()`);
-    await waitFor(() => cc.savedPatches.length === 1, 10000, "the pending-state save PUT");
+    await waitFor(() => cc.savedPatches.length === 1, 10000, "the save PUT");
     const pendingSavePatch = cc.savedPatches[0];
-    if (!pendingSavePatch) assert.fail("the pending-state save PUT was not recorded");
+    if (!pendingSavePatch) assert.fail("the save PUT was not recorded");
     assert.equal(
       pendingSavePatch.permission_mode,
       CONFIGURED_PERMISSION_MODE,
-      "a save while capability is pending submits the configured permission mode, never a placeholder list"
+      "a save during background capability refresh submits the current permission mode"
     );
     assert.equal(
       pendingSavePatch.default_effort,
       CONFIGURED_EFFORT,
-      "a save while capability is pending submits the configured default-model effort, undisturbed by the fallback edit"
+      "a save during background capability refresh submits the current default-model effort, undisturbed by the fallback edit"
     );
     assert.equal(pendingSavePatch.rate_limit_fallback_model, "cc/model-b", "the edited fallback model is submitted");
     assert.equal(pendingSavePatch.default_model, "cc/model-a", "the untouched default model is submitted unchanged");
 
+    await waitForPage(
+      page.evaluate,
+      () => `document.getElementById("settingsMessage").innerText !== "Saving…" && document.getElementById("defaultEffort").disabled === false`,
+      15000,
+      "Saving to finish before provider verification completes"
+    );
     await waitFor(() => cc.catalogCalls === 3, 10000, "the post-save catalog read");
+    assert.equal((await selectState("defaultEffort")).disabled, false, "post-save provider verification does not hold the Reasoning control locked");
     cc.settleCatalog(2, { ok: true, view: pendingCatalogView("cc/model-a", "cc/model-b") });
-    await waitForPendingPresentation();
-    await assertPendingPresentation("post-save");
+    await waitForRecovery();
 
     // The pre-save capability read (index 1) was detached by the save; settling
     // it now must not disturb the view. The post-save capability read (index 2)
@@ -2096,7 +2085,7 @@ test("Command Code capability pending keeps Permission/Reasoning plain and disab
       "the untouched default model stays selected after the post-save capability evidence"
     );
     console.log(
-      "[hub-ui-capability-pending] EV2 switch-back + post-save: plain/disabled pending both times, draft-only save, choices restored"
+      "[hub-ui-capability-pending] EV2 switch-back + post-save: known controls stayed usable while fresh verification ran"
     );
 
     // ---- 3) PERSISTENT FAILURE: the capability phase answers with a probe
@@ -2106,7 +2095,7 @@ test("Command Code capability pending keeps Permission/Reasoning plain and disab
     await page.evaluate(`document.getElementById("saveSettings").click()`);
     await waitFor(() => cc.catalogCalls === 4, 10000, "the failed-capability post-save catalog read");
     cc.settleCatalog(3, { ok: true, view: pendingCatalogView("cc/model-a", null) });
-    await waitForPendingPresentation();
+    await waitForRecovery();
     await waitFor(() => cc.capabilityCalls === 4, 10000, "the failed capability read");
     cc.settleCapabilities(3, { ok: true, view: FAILED_CAPABILITY_PATCH });
     await waitForPage(
@@ -4488,15 +4477,21 @@ test("WorkBuddy Full Access and default/fallback Reasoning save and reopen from 
     assert.equal(standardNote, STANDARD_NOTE_TEXT, "WorkBuddy standard (native default) shows the standard note");
     await waitForPage(page.evaluate, () => `document.getElementById("wbSaveSettings").disabled === false`, 15000, "the Save button after choosing standard");
     await page.evaluate(`document.getElementById("wbSaveSettings").click()`);
-    await waitFor(() => wb.savedPatches.length === 1 && wb.catalogCalls === 2, 30000, "the standard save and its fresh provider read");
+    await waitFor(() => wb.savedPatches.length === 1 && wb.catalogCalls === 2, 30000, "the standard save and its background provider read");
+    await waitForPage(
+      page.evaluate,
+      () => `document.getElementById("wbSettingsMessage").innerText !== "Saving…" && !document.getElementById("wbPermissionMode").disabled`,
+      15000,
+      "WorkBuddy Saving to finish before its background provider read settles"
+    );
     const standardSaved = wb.savedPatches[0]!;
     assert.equal(standardSaved.permission_mode, "default", "choosing standard persists WorkBuddy's native default value");
     assert.equal(standardSaved.default_effort, "high", "the standard save keeps the configured default-model effort");
     assert.equal(standardSaved.rate_limit_fallback_effort, "medium", "the standard save keeps the configured fallback-model effort");
     Object.assign(view.config, standardSaved);
     wb.settleCatalog(1, { ok: true, view });
-    // The selected value already matches while the save is still in flight.
-    // Wait for the fresh response to unlock the form before editing it again.
+    // The persisted value is already usable before the provider re-read answers;
+    // the fresh response only verifies and replaces provider evidence.
     await waitForPage(
       page.evaluate,
       () => `!document.getElementById("wbPermissionMode").disabled && document.getElementById("wbPermissionMode").value === "default" && document.getElementById("wbPermissionMode").options[0].textContent === "standard"`,
