@@ -351,6 +351,10 @@ export function workBuddyDesktopMacRuntimeEnv(
   env.CODEBUDDY_CONFIG_DIR = configDir;
   env.WORKBUDDY_CONFIG_DIR = configDir;
   env.CODEBUDDY_FORCE_HEADLESS_BUNDLE = "1";
+  // Newer WorkBuddy packages may ship only the lite-wb non-TUI bundle. The
+  // launcher prioritizes this flag; older launchers ignore it and keep using
+  // the headless flag above.
+  env.CODEBUDDY_FORCE_LITE_WB_BUNDLE = "1";
   return env;
 }
 

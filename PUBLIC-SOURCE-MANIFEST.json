@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "4a25814a695f5cb7ed6859fbb778c593888ad35a",
+  "sourceCommit": "d951c71207357db5f67fd0def04ccc29fd54449f",
   "sourceDirty": false,
   "files": [
     {
@@ -525,7 +525,7 @@
     },
     {
       "path": "src/providers/workbuddy-ai/desktop-bridge.ts",
-      "sha256": "e70b84a561cb451569c4f518409619f543b215017a18d94ed0a4a4467440c99e"
+      "sha256": "5f87cdef668440edc35c6c9e7a5f66740738d4fc28bd69e4b0076713dd1e17bb"
     },
     {
       "path": "src/providers/workbuddy-ai/desktop-runtime-helper.ts",
@@ -537,7 +537,7 @@
     },
     {
       "path": "src/providers/workbuddy-ai/index.ts",
-      "sha256": "95d0fc7d0a158acee7bcfdf6d388689898adc168cad9b5c2686922d58d77c891"
+      "sha256": "6178fe61e575f2912641610cbd0ba0d386cab0d4e1c1cff9e117475a2b13eb1e"
     },
     {
       "path": "src/providers/workbuddy-ai/runtime-lifecycle.ts",
@@ -1121,7 +1121,7 @@
     },
     {
       "path": "src/tests/unit/workbuddy-ai-provider.test.ts",
-      "sha256": "09b89aa6a8e1687104a42e55c8d1d765d9ffcd03b77b97b3c0e3c74daff9d970"
+      "sha256": "fd0efd22468dbe77e35827549aa3f96e10cbcacfd22a2ae707235a1f63f5db88"
     },
     {
       "path": "src/tests/unit/workbuddy-ai-settings.test.ts",
@@ -1133,7 +1133,7 @@
     },
     {
       "path": "src/tests/unit/workbuddy-desktop-bridge.test.ts",
-      "sha256": "c910efbb4f937f181c137d0d95e57302da3599ccac2b20103a7b52140993c1a2"
+      "sha256": "f35a2c784f42a64f7a9acb8f78dc23d3260b58cb728451bf8e53fa6325da0172"
     },
     {
       "path": "src/tests/unit/workbuddy-model-effort.test.ts",

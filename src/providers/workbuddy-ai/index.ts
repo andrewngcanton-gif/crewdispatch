@@ -30,6 +30,7 @@ export const WORKBUDDY_AI_CLI_PATH_ENV = "JOBQUAY_WORKBUDDY_AI_CLI_PATH";
 export const WORKBUDDY_AI_CLI_COMMAND_ENV = "JOBQUAY_WORKBUDDY_AI_CLI_COMMAND";
 export const WORKBUDDY_AI_CONFIG_DIR_ENV = "CODEBUDDY_CONFIG_DIR";
 export const WORKBUDDY_AI_FORCE_HEADLESS_ENV = "CODEBUDDY_FORCE_HEADLESS_BUNDLE";
+export const WORKBUDDY_AI_FORCE_LITE_ENV = "CODEBUDDY_FORCE_LITE_WB_BUNDLE";
 export const WORKBUDDY_AI_NATIVE_CONFIG_DIR_ENV = "WORKBUDDY_CONFIG_DIR";
 
 function workBuddyDesktopRoutePlatform(platform: NodeJS.Platform): boolean {
@@ -647,11 +648,14 @@ export function workBuddyAiProfileEnv(baseEnv: NodeJS.ProcessEnv = process.env):
   const configDir = path.join(os.homedir(), ".workbuddy-ai");
   env[WORKBUDDY_AI_CONFIG_DIR_ENV] = configDir;
   env[WORKBUDDY_AI_NATIVE_CONFIG_DIR_ENV] = configDir;
-  // The packaged international CLI's `--list-models` path must load the
-  // shipped headless bundle. Current WorkBuddy AI installs do not ship the full
-  // TUI bundle next to this CLI entry, so leaving this unset makes the public
-  // catalog command fall through to a missing ../dist/codebuddy module.
+  // WorkBuddy's packaged CLI has used two non-TUI bundle layouts across
+  // releases. Older installs ship `codebuddy-headless`; newer installs (for
+  // example CLI 2.161.0) may ship only `codebuddy-lite-wb.mjs`. New launchers
+  // give FORCE_LITE_WB precedence and older launchers simply ignore that env,
+  // so setting BOTH keeps one profile compatible with both generations while
+  // still preventing fallback into a missing full TUI bundle.
   env[WORKBUDDY_AI_FORCE_HEADLESS_ENV] = "1";
+  env[WORKBUDDY_AI_FORCE_LITE_ENV] = "1";
   return env;
 }
 

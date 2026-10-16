@@ -84,6 +84,7 @@ test("macOS Desktop runtime env keeps shell essentials but never forwards unrela
   assert.equal(env.CODEBUDDY_CONFIG_DIR, "/Users/Test/.workbuddy-ai");
   assert.equal(env.WORKBUDDY_CONFIG_DIR, "/Users/Test/.workbuddy-ai");
   assert.equal(env.CODEBUDDY_FORCE_HEADLESS_BUNDLE, "1");
+  assert.equal(env.CODEBUDDY_FORCE_LITE_WB_BUNDLE, "1");
   assert.equal(env.ELECTRON_RUN_AS_NODE, "1");
   assert.equal(env.OPENAI_API_KEY, undefined);
   assert.equal(env.JOBQUAY_DAEMON_BEARER, undefined);
