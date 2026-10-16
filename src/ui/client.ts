@@ -1194,9 +1194,9 @@ function renderSettings(): void {
 // The ONE provider-settings fresh loader (shared by both providers)
 // ---------------------------------------------------------------------------
 //
-// Opening Settings, switching provider and the post-save refresh all perform a
-// real provider read: the simple loading state is shown while the read is in
-// flight, and the provider form is only rendered from that read's response.
+// Opening Settings, switching provider and post-save verification all perform a
+// real provider read. Only the first usable read may show provider-level loading;
+// once a usable view exists, fresh verification runs behind that visible form.
 
 interface ProviderSettingsLoad<TView, TConfig> {
   path: string;

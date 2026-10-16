@@ -5,6 +5,8 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const names = [
+  "every registered Settings provider declares a contract profile and executable browser fixture",
+  "every registered provider satisfies the universal Settings UI contract",
   "Settings refreshes providers without blanking an already-loaded form",
   "the installed-package model list renders while the capability probe is still hanging (T6, production-default timing)",
   "Command Code first capability read blocks controls, but later refreshes keep known Permission/Reasoning usable",
@@ -16,7 +18,10 @@ const names = [
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const pattern = `^(?:${names.map(escapeRegex).join("|")})$`;
-const file = path.resolve(process.cwd(), "dist", "tests", "integration", "hub-ui-browser.test.js");
+const files = [
+  path.resolve(process.cwd(), "dist", "tests", "unit", "settings-ui-contract-registry.test.js"),
+  path.resolve(process.cwd(), "dist", "tests", "integration", "hub-ui-browser.test.js")
+];
 
 const nodeArgs = [];
 if (typeof globalThis.WebSocket !== "function") {
@@ -27,7 +32,7 @@ if (typeof globalThis.WebSocket !== "function") {
   nodeArgs.push("--experimental-websocket");
 }
 if (process.platform === "win32") nodeArgs.push("--test-concurrency=1");
-nodeArgs.push("--test", "--test-name-pattern", pattern, file);
+nodeArgs.push("--test", "--test-name-pattern", pattern, ...files);
 
 const child = spawnSync(process.execPath, nodeArgs, {
   cwd: process.cwd(),

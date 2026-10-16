@@ -1108,9 +1108,9 @@ test("built Hub serves its browser UI with a strict script boundary and no task 
     assert.match(html, /id="wbCliInfo" class="settings-status hidden" role="status" aria-live="polite"/);
     assert.match(html, /<h2>Sessions & logs<\/h2><p class="settings-subtitle">Global settings shared by all providers\.<\/p>/);
     assert.match(html, /\.settings-status\.loading > div:first-child::before/);
-    // WorkBuddy AI's waiting line is plain `loading...` at normal weight: the
-    // narrow modifier keeps the shared 650 weight for non-loading status copy.
-    assert.match(html, /\.settings-status\.loading\.wb-loading > div:first-child \{ font-weight:400; \}/);
+    // First-load copy uses one provider-neutral normal-weight presentation;
+    // non-loading status/error copy keeps the shared semibold styling.
+    assert.match(html, /\.settings-status\.loading > div:first-child \{ font-weight:400; \}/);
     assert.match(html, /id="catalogInfo" class="settings-status hidden"/);
     assert.match(html, /id="effectiveInfo" class="settings-status hidden"/);
     assert.match(html, /id="wbCatalogInfo" class="settings-status hidden"/);
@@ -1174,9 +1174,10 @@ test("built Hub serves its browser UI with a strict script boundary and no task 
     // answers in milliseconds, so NO provider may claim a seconds-long bound
     // here. No cached/stale/updating state exists any more.
     assert.match(script, /function renderProviderLoadingState\(/);
-    assert.match(script, /"Loading Command Code…"/);
-    assert.match(script, /"loading\.\.\."/);
-    assert.match(script, /classList\.toggle\("wb-loading", provider === "workbuddy-ai"\)/);
+    assert.match(script, /Loading configuration… First load may take a moment\./);
+    assert.doesNotMatch(script, /wb-loading/);
+    assert.doesNotMatch(script, /"Loading Command Code…"/);
+    assert.doesNotMatch(script, /"loading\.\.\."/);
     assert.doesNotMatch(script, /may take 5[–-]20 seconds/, "the loading state no longer covers the slow CLI phase, so it must not claim a 5–20s bound");
     assert.doesNotMatch(script, /Loading models and settings…/);
     assert.doesNotMatch(script, /Loading Command Code settings…/);
@@ -1186,9 +1187,9 @@ test("built Hub serves its browser UI with a strict script boundary and no task 
     assert.doesNotMatch(script, /Checking WorkBuddy AI…/);
     assert.doesNotMatch(script, /"Updating…"/);
     assert.match(script, /classList\.add\("loading"\)/);
-    // ONE provider-neutral fresh loader for both providers: a fresh `?fresh=1`
-    // read before the form is rendered, with billing metadata gated on
-    // billing_verified. No cache-first/revalidate request may exist.
+    // ONE provider-neutral fresh loader for both providers: first read may show
+    // loading; later reads stay behind the usable form. Billing metadata remains
+    // gated on billing_verified. No cache-first/revalidate request may exist.
     assert.match(script, /function loadProviderSettingsFresh\(/);
     assert.match(script, /\?fresh=1/);
     assert.doesNotMatch(script, /\?cache=1/);

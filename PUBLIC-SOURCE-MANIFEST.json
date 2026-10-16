@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "0ac1ac39d65349bce33258d4894149b297e456e6",
+  "sourceCommit": "4a25814a695f5cb7ed6859fbb778c593888ad35a",
   "sourceDirty": false,
   "files": [
     {
@@ -161,7 +161,7 @@
     },
     {
       "path": "scripts/run-settings-ui-contract.cjs",
-      "sha256": "5ef0cc0f20306da866be7d2c427fab7b1eeb36c764e920ae4e595544424905c7"
+      "sha256": "3df3e0e1c6d3009693b6e0696f859565462b1ec7c16438b7b3c060929ca6d138"
     },
     {
       "path": "scripts/run-tests.cjs",
@@ -285,7 +285,7 @@
     },
     {
       "path": "src/config/settings-registry.ts",
-      "sha256": "e2306ec5c3eef9adab0897bb2fcf088b5b5819451e3124428912401f91292329"
+      "sha256": "380bc82bc1f3dd44a647343a64f392db58e51d47cecb884831f101aa0b7bfa37"
     },
     {
       "path": "src/config/settings.ts",
@@ -664,6 +664,10 @@
       "sha256": "42639482a146641ee2fc2ad9d159e33e2238ff7656bffee9eadc571c75998781"
     },
     {
+      "path": "src/tests/helpers/settings-ui-contract-fixtures.ts",
+      "sha256": "26aaa970a4b293eda80e92410dd91cefd9a11a3696657c780f0b2ec56523ba43"
+    },
+    {
       "path": "src/tests/helpers/wb-cancel-desktop.ts",
       "sha256": "f5f40e7c6809733d09b0d3001e2fab7a9948047312ca40d86312880f81e49c39"
     },
@@ -769,11 +773,11 @@
     },
     {
       "path": "src/tests/integration/hub-http-mcp.test.ts",
-      "sha256": "d207dd35c650e3b8f92306d66960892adb55d5c2c488b9149e01fb8b95d5837a"
+      "sha256": "23bbcafb16ec5be7e9f44f577f1b83f37a65eed1ff1fdbc3d9f14fd588361e37"
     },
     {
       "path": "src/tests/integration/hub-ui-browser.test.ts",
-      "sha256": "519340f00f052a1ae79bc48e5eae1ff15ddbf27dda26135e7ad1e408c5f3e2e1"
+      "sha256": "9c32c9d77facb10bfcafc21bce09ec75b1e35b94cf3261dc23a76ace421f68bb"
     },
     {
       "path": "src/tests/integration/hub-ui-coherence.test.ts",
@@ -1072,6 +1076,10 @@
       "sha256": "b616f4eadb2a107cd06225763baf4f6d14334392cd21a39933112790b85e4e59"
     },
     {
+      "path": "src/tests/unit/settings-ui-contract-registry.test.ts",
+      "sha256": "dadee127b3c3b3c20dbf765d7db71e326217ddf62c66681de42bae0833580647"
+    },
+    {
       "path": "src/tests/unit/spawn-plan.test.ts",
       "sha256": "2b99109692f213ccdcf7fae15489fd5c33a37878b2fcf5e9d2d324c1c727f73c"
     },
@@ -1141,7 +1149,7 @@
     },
     {
       "path": "src/ui/client.ts",
-      "sha256": "03f584426e5a2fb7237bcfc22693ec0014b0815a46ce645d35092394a93d1917"
+      "sha256": "e6ca7cf518b9929bfbd9265b48e7f0bef19356f1faf4be07c349871e99691674"
     },
     {
       "path": "src/ui/page.ts",
