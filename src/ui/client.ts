@@ -233,8 +233,8 @@ const STANDARD_PERMISSION_NOTE = "May request permission to edit files or run co
 const PLAN_PERMISSION_NOTE = "Suggests changes without editing project files.";
 const ACCEPT_EDITS_PERMISSION_NOTE = "Auto-approves normal edits; commands may need approval.";
 const COMMAND_CODE_YOLO_NOTE = "Recommended. Skips routine approvals; explicit rules and safety checks still apply.";
-const WORKBUDDY_YOLO_NOTE = "Recommended. Runs most actions automatically; risky commands may need approval.";
-const WORKBUDDY_FULL_ACCESS_NOTE = "Skips permission checks; repeated actions may still pause the task.";
+const WORKBUDDY_YOLO_NOTE = "Runs most actions automatically; risky commands may need approval.";
+const WORKBUDDY_FULL_ACCESS_NOTE = "Recommended. Skips permission checks; repeated actions may still pause the task.";
 const PROVIDER_RULES_PERMISSION_NOTE = "Provider rules apply; approvals may pause the task.";
 
 function el<T extends HTMLElement>(id: string): T {

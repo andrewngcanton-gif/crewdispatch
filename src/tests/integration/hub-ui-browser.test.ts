@@ -75,8 +75,8 @@ const STANDARD_NOTE_TEXT = "May request permission to edit files or run commands
 const PLAN_NOTE_TEXT = "Suggests changes without editing project files.";
 const ACCEPT_EDITS_NOTE_TEXT = "Auto-approves normal edits; commands may need approval.";
 const COMMAND_CODE_YOLO_NOTE_TEXT = "Recommended. Skips routine approvals; explicit rules and safety checks still apply.";
-const WORKBUDDY_YOLO_NOTE_TEXT = "Recommended. Runs most actions automatically; risky commands may need approval.";
-const WORKBUDDY_FULL_ACCESS_NOTE_TEXT = "Skips permission checks; repeated actions may still pause the task.";
+const WORKBUDDY_YOLO_NOTE_TEXT = "Runs most actions automatically; risky commands may need approval.";
+const WORKBUDDY_FULL_ACCESS_NOTE_TEXT = "Recommended. Skips permission checks; repeated actions may still pause the task.";
 const PROVIDER_RULES_NOTE_TEXT = "Provider rules apply; approvals may pause the task.";
 const POLL_CYCLE_MS = 2500;
 const WORKBUDDY_MODEL = "deepseek-v4.1-flash";
@@ -4574,8 +4574,8 @@ test("WorkBuddy Full Access and default/fallback Reasoning save and reopen from 
     })()`);
     const workBuddyYoloNote = String(await page.evaluate(`document.getElementById("wbYoloWarning").textContent`));
     assert.equal(workBuddyYoloNote, WORKBUDDY_YOLO_NOTE_TEXT, "WorkBuddy yolo states its high-risk approval ask honestly");
-    assert.match(workBuddyYoloNote, /^Recommended\./, "WorkBuddy yolo is visibly marked as the recommended normal mode");
-    assert.doesNotMatch(fullAccessNote, /Recommended/i, "Full Access remains distinct from the recommended yolo mode");
+    assert.doesNotMatch(workBuddyYoloNote, /Recommended/i, "WorkBuddy yolo stays distinct from the recommended Full Access mode");
+    assert.match(fullAccessNote, /^Recommended\./, "WorkBuddy Full Access is visibly marked as the recommended mode");
     assert.notEqual(workBuddyYoloNote, fullAccessNote, "WorkBuddy yolo and Full Access are explained as distinct behaviors");
     assert.equal(wb.savedPatches.length, 2, "the yolo preview was not saved");
     console.log(

@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "5d89a194aecdffedd18d24cd4ff0d714e2f1ae71",
+  "sourceCommit": "0ac1ac39d65349bce33258d4894149b297e456e6",
   "sourceDirty": false,
   "files": [
     {
@@ -773,7 +773,7 @@
     },
     {
       "path": "src/tests/integration/hub-ui-browser.test.ts",
-      "sha256": "5168d016adace2f145c032bd58b542742ed26315355fe79481df70c84a87cc45"
+      "sha256": "519340f00f052a1ae79bc48e5eae1ff15ddbf27dda26135e7ad1e408c5f3e2e1"
     },
     {
       "path": "src/tests/integration/hub-ui-coherence.test.ts",
@@ -1141,7 +1141,7 @@
     },
     {
       "path": "src/ui/client.ts",
-      "sha256": "b7b7034ee6b9d1ab5bdaa31724e54d8123009cfd33cc0ae8c11eed9ccde9bf71"
+      "sha256": "03f584426e5a2fb7237bcfc22693ec0014b0815a46ce645d35092394a93d1917"
     },
     {
       "path": "src/ui/page.ts",
