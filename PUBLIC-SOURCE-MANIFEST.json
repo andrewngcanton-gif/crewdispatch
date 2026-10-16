@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "d951c71207357db5f67fd0def04ccc29fd54449f",
+  "sourceCommit": "7b84571cfd1e9e032f03c9b7aa2782cd93cf8c9e",
   "sourceDirty": false,
   "files": [
     {
@@ -257,7 +257,7 @@
     },
     {
       "path": "src/codex/client-install.ts",
-      "sha256": "f4e890d7510726838e4f31ce835ffd4d6fa69c3b2b555c6d9f894e14cb7c8973"
+      "sha256": "a235509ce36a5d4b81aa732102a921f2677f8d3224cf043d05a103cfd4cc6a34"
     },
     {
       "path": "src/config/global.ts",
@@ -933,7 +933,7 @@
     },
     {
       "path": "src/tests/unit/codex-client-install.test.ts",
-      "sha256": "c52936609310e11429d5756502d89cc015b069cedfaee6a57a2b4be61c5c8df3"
+      "sha256": "c81ed2a6bad296026bd17fa4e41db6e703b9fc06a0009d5b53e7c19785d7db87"
     },
     {
       "path": "src/tests/unit/command-code-acp-bridge.test.ts",

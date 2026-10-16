@@ -228,6 +228,49 @@ test("Codex caller install preserves a foreign ownership manifest without touchi
   }
 });
 
+test("Codex caller install retires an owned registration whose previous install target is gone", () => {
+  const fx = fixture();
+  const staleTarget = path.join(fx.root, "old-runtime");
+  const calls: string[][] = [];
+  try {
+    fs.mkdirSync(fx.codexHome, { recursive: true });
+    fs.writeFileSync(
+      path.join(fx.codexHome, CODEX_INSTALL_MANIFEST),
+      `${JSON.stringify({
+        product: "crewdispatch",
+        formatVersion: 1,
+        target: staleTarget,
+        marketplaceInstalled: true,
+        pluginInstalled: true,
+        promptInstalled: true
+      }, null, 2)}\n`,
+      "utf8"
+    );
+
+    const runCli = (args: string[]): CodexCliResult => {
+      calls.push([...args]);
+      if (args[0] === "plugin" && args[1] === "list") return fail("stale marketplace root");
+      if (args[0] === "plugin" && args[1] === "remove") return ok({ pluginId: CODEX_PLUGIN_ID });
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "list") return fail("stale marketplace root");
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "remove") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      if (args[0] === "plugin" && args[1] === "marketplace" && args[2] === "add") return ok({ marketplaceName: CODEX_MARKETPLACE_NAME });
+      if (args[0] === "plugin" && args[1] === "add") return ok({ pluginId: CODEX_PLUGIN_ID });
+      return fail(`unexpected command: ${args.join(" ")}`);
+    };
+
+    const installed = installCodexClient(fx.target, { env: fx.env, runCli, runPromptScript: () => ok() });
+    assert.equal(installed.ok, true, JSON.stringify(installed));
+    assert.ok(installed.warnings.some((warning) => /stale CrewDispatch Codex registration/.test(warning)));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin remove ${CODEX_PLUGIN_ID} --json`));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin marketplace remove ${CODEX_MARKETPLACE_NAME} --json`));
+    assert.ok(calls.some((args) => args.join(" ") === `plugin marketplace add ${fx.target} --json`));
+    const manifest = JSON.parse(fs.readFileSync(path.join(fx.codexHome, CODEX_INSTALL_MANIFEST), "utf8")) as Record<string, unknown>;
+    assert.equal(manifest.target, fx.target);
+  } finally {
+    fs.rmSync(fx.root, { recursive: true, force: true });
+  }
+});
+
 test("Codex caller uninstall preserves a live foreign plugin and keeps ownership evidence for retry", () => {
   const fx = fixture();
   try {
