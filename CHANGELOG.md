@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.8 — 2026-10-16
+
+Settings UI regression patch release.
+
+- WorkBuddy AI no longer shows a catalog warning when a complete reliable provider snapshot model list is already available.
+- Command Code shows the actual current default model directly instead of a `CLI default` pseudo-choice, while still following the CLI default until the user explicitly changes it.
+- Command Code Reasoning remains model-specific for the displayed default and selected fallback models.
+- Provider routing and execution behavior are unchanged.
+
 ## 0.1.7 — 2026-10-15
 
 Provider model-catalog recovery patch release.

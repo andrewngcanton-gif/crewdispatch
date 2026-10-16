@@ -56,7 +56,7 @@ function sha256(file: string): string {
 test("the packaged runtime carries the Claude assets and installs/wakes from its own layout", { timeout: 900000 }, async () => {
   if (ACCEPT_SOURCE_ROOT) {
     const pkg = JSON.parse(fs.readFileSync(path.join(SOURCE_ROOT, "package.json"), "utf8")) as Record<string, unknown>;
-    assert.equal(pkg.version, "0.1.7", "exact-artifact Claude acceptance requires the 0.1.7 candidate");
+    assert.equal(pkg.version, "0.1.8", "exact-artifact Claude acceptance requires the 0.1.8 candidate");
     assert.equal(pkg.license, "Apache-2.0");
   }
   const tempRoot = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "jobquay-claude-packaged-"));

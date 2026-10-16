@@ -162,7 +162,7 @@ async function prepareAcceptanceRuntime(temp: string, jobRoot: string, env: Node
     JOBQUAY_TEST_LAUNCHCTL_STATE: path.join(temp, "launchctl-state.json")
   };
   const install = runJsonProcess(sourceInstaller, ["install", "--target", installedTarget], temp, installEnv, "candidate install");
-  assert.equal(install.packageVersion, "0.1.7", `candidate install version mismatch: ${JSON.stringify(install)}`);
+  assert.equal(install.packageVersion, "0.1.8", `candidate install version mismatch: ${JSON.stringify(install)}`);
 
   const mcpEntry = path.join(installedTarget, "dist", "mcp", "server.js");
   const installedCli = path.join(installedTarget, "dist", "cli", "crewdispatch-cli.js");
@@ -184,7 +184,7 @@ async function prepareAcceptanceRuntime(temp: string, jobRoot: string, env: Node
   const ping = await fetch(`${apiBase}/api/ping`);
   assert.equal(ping.status, 200, `installed Hub ping failed (${ping.status})`);
   const pingBody = await ping.json() as Record<string, unknown>;
-  assert.equal(pingBody.version, "0.1.7");
+  assert.equal(pingBody.version, "0.1.8");
 
   return {
     mcpEntry,

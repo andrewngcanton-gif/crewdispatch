@@ -3534,34 +3534,38 @@ test("WorkBuddy Reasoning is strictly model-specific across model switches and k
       })()`);
     };
 
-    wb.settleAt(0, {
-      ok: true,
-      view: workBuddyAiSettingsView({
-        models: [WORKBUDDY_MODEL, "gpt-5.5", "gemini-3.5-flash"],
-        offeredModels: [WORKBUDDY_MODEL, "gpt-5.5", "gemini-3.5-flash"],
-        meta: {
-          // The current DeepSeek evidence: the Official App publishes only its
-          // default effort; the same model id's installed Command Code list
-          // supplies the fallback options.
-          [WORKBUDDY_MODEL]: {
-            label: "DeepSeek V4.1 Flash",
-            credits: "x0",
-            reasoning: { app_default_effort: "high", supported_efforts: ["low", "high", "max"], supported_efforts_source: "command-code" }
-          },
-          "gpt-5.5": {
-            label: "GPT-5.5",
-            reasoning: { app_default_effort: "high", supported_efforts: ["low", "medium", "high", "xhigh"], supported_efforts_source: "official-app" }
-          },
-          "gemini-3.5-flash": {
-            label: "Gemini 3.5 Flash",
-            reasoning: { app_default_effort: "medium", supported_efforts: null, supported_efforts_source: null }
-          }
+    const wbView = workBuddyAiSettingsView({
+      models: [WORKBUDDY_MODEL, "gpt-5.5", "gemini-3.5-flash"],
+      offeredModels: [WORKBUDDY_MODEL, "gpt-5.5", "gemini-3.5-flash"],
+      meta: {
+        // The current DeepSeek evidence: the Official App publishes only its
+        // default effort; the same model id's installed Command Code list
+        // supplies the fallback options.
+        [WORKBUDDY_MODEL]: {
+          label: "DeepSeek V4.1 Flash",
+          credits: "x0",
+          reasoning: { app_default_effort: "high", supported_efforts: ["low", "high", "max"], supported_efforts_source: "command-code" }
         },
-        effort: "max"
-      })
+        "gpt-5.5": {
+          label: "GPT-5.5",
+          reasoning: { app_default_effort: "high", supported_efforts: ["low", "medium", "high", "xhigh"], supported_efforts_source: "official-app" }
+        },
+        "gemini-3.5-flash": {
+          label: "Gemini 3.5 Flash",
+          reasoning: { app_default_effort: "medium", supported_efforts: null, supported_efforts_source: null }
+        }
+      },
+      effort: "max"
     });
+    wbView.catalog.error = "WorkBuddy live model query returned routing presets only; using provider snapshot.";
+    wb.settleAt(0, { ok: true, view: wbView });
     await waitForPage(page.evaluate, () => `!document.getElementById("wbDefaultModel").disabled`, 60000, "the WorkBuddy controls");
     await waitForPage(page.evaluate, () => `document.getElementById("wbDefaultEffort").options.length === 3`, 20000, "the model-specific Reasoning options");
+    assert.equal(
+      await page.evaluate(`document.getElementById("wbCatalogInfo").classList.contains("hidden")`),
+      true,
+      "a reliable provider snapshot stays quiet even when live-read fallback detail is retained internally"
+    );
 
     const ds = await effortState();
     assert.deepEqual(
@@ -3711,7 +3715,7 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
   // `max`; the fallback selection has no saved effort of its own.
   const probe = controlledTwoPhaseSettingsProvider("command-code", {
     cli_path: null,
-    default_model: DEEPSEEK,
+    default_model: null,
     rate_limit_fallback_model: null,
     permission_mode: "yolo",
     default_effort: "max",
@@ -3726,7 +3730,10 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
       [CANARY]: { efforts: ["low", "medium", "xhigh"] }
     }
   });
+  view.config.default_model = null;
   view.config.default_effort = "max";
+  view.catalog.default_model = null;
+  view.effective.model = null;
 
   let hub: HubHandle | null = null;
   let chrome: ChildProcess | null = null;
@@ -3812,9 +3819,14 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
     });
     await waitForPage(page.evaluate, () => `document.getElementById("defaultEffort").disabled === false`, 30000, "the Reasoning control");
     assert.equal(
-      await page.evaluate(`document.getElementById("defaultModel").options[0].textContent`),
-      `CLI default · ${DEEPSEEK}`,
-      "the empty selection explains the CLI's currently observed default without persisting it"
+      await page.evaluate(`document.getElementById("defaultModel").value`),
+      DEEPSEEK,
+      "the fresh CLI default is shown directly as the selected model"
+    );
+    assert.equal(
+      await page.evaluate(`Array.from(document.getElementById("defaultModel").options).some((option) => /CLI default/i.test(option.textContent || ""))`),
+      false,
+      "the model dropdown exposes only real model choices, never the internal CLI-default state"
     );
 
     // ---- The SELECTED model's own list, and nothing else. ----

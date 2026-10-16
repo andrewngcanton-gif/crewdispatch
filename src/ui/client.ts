@@ -943,7 +943,8 @@ function fillModelSelect(
   // Same shared freshness-gated ordering as WorkBuddy AI: only freshly
   // verified free evidence may move models to the front.
   const models = stableFreeFirstOrder(settingsModelChoices(), view?.model_meta, billingVerified);
-  select.replaceChildren(makeOption("", emptyLabel));
+  select.replaceChildren();
+  if (emptyLabel) select.appendChild(makeOption("", emptyLabel));
   for (const model of models) {
     const free = billingVerified && view?.model_meta?.[model]?.free === true;
     const option = makeOption(model, free ? model + " · Free now" : model);
@@ -1119,15 +1120,15 @@ function renderSettings(): void {
   fillPermissionMode();
   // The model selects come FIRST: each Reasoning select's options follow the
   // model THAT select points at, so both model lists must already be in place.
+  const visibleDefaultModel = draft.default_model ?? view.catalog.default_model;
   fillModelSelect(
     ui.defaultModel,
-    draft.default_model,
-    view.catalog.default_model ? "CLI default · " + view.catalog.default_model : "CLI default model",
+    visibleDefaultModel,
+    visibleDefaultModel ? "" : "loading…",
     "optional"
   );
   fillModelSelect(ui.fallbackModel, draft.rate_limit_fallback_model, "No rate-limit final fallback", "optional");
-  fillCommandCodeEfforts();
-  renderPermissionNote(ui.yoloWarning, "command-code", draft.permission_mode);
+  fillCommandCodeEfforts();  renderPermissionNote(ui.yoloWarning, "command-code", draft.permission_mode);
   ui.saveSettings.disabled = settingsControlsLocked() || !settingsState.dirty;
 
   const cliProblem = !view.cli.available || !!view.cli.error;
@@ -1349,7 +1350,7 @@ async function saveSettings(): Promise<void> {
   if (settingsState.busy || settingsState.readError || !settingsState.dirty || !view || !draft) return;
   const payload: SettingsConfig = {
     cli_path: draft.cli_path,
-    default_model: ui.defaultModel.value || null,
+    default_model: draft.default_model,
     rate_limit_fallback_model: ui.fallbackModel.value || null,
     permission_mode: view.capabilities.permission_modes.length ? ui.permissionMode.value || draft.permission_mode : draft.permission_mode,
     default_effort: view.capabilities.supports_effort ? ui.defaultEffort.value || null : draft.default_effort,
@@ -1692,15 +1693,14 @@ function renderWorkBuddySettings(): void {
     ui.wbCliInfo.classList.remove("warning");
   }
 
-  const catalogProblem = !view.catalog.reliable || !!view.catalog.error;
+  const catalogProblem = !view.catalog.reliable || view.catalog.models.length === 0;
   ui.wbCatalogInfo.classList.toggle("hidden", !catalogProblem);
   if (catalogProblem) {
-    const catalogLines = ["WorkBuddy AI model list unavailable or could not be verified."];
-    if (view.catalog.error) catalogLines.push(view.catalog.error);
-    showLines(ui.wbCatalogInfo, catalogLines);
+    showLines(ui.wbCatalogInfo, ["WorkBuddy AI model list unavailable."]);
     ui.wbCatalogInfo.classList.add("warning");
   } else {
     ui.wbCatalogInfo.classList.remove("warning");
+    ui.wbCatalogInfo.replaceChildren();
   }
 
   // Default/fallback selections are the user-facing route. Do not expose the
@@ -3047,7 +3047,7 @@ ui.defaultModel.addEventListener("change", () => {
     // saved for the previous model is never carried onto the new one. The
     // fallback model's effort is untouched.
     draft.default_effort = scopedSavedEffort(
-      view?.config.default_model ?? null,
+      view?.config.default_model ?? view?.catalog.default_model ?? null,
       view?.config.default_effort ?? null,
       draft.default_model,
       commandCodeEffortSupportedByModel
