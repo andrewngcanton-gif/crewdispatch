@@ -863,7 +863,7 @@ test("an already-open Hub Jobs page shows a newly created session within one pol
   }
 });
 
-test("Settings always performs a fresh provider read: ONE simple loading message, no previous view behind it, and every open/switch reads again", { timeout: 240000 }, async (t) => {
+test("Settings refreshes providers without blanking an already-loaded form", { timeout: 240000 }, async (t) => {
   const browserPath = findChromium();
   if (!browserPath) {
     t.skip("no Chromium browser (Chrome/Edge) available; runtime browser evidence not produced");
@@ -1093,14 +1093,20 @@ test("Settings always performs a fresh provider read: ONE simple loading message
     console.log("[hub-ui-settings-fresh] EV2 provider switch: simple loading, then fresh WorkBuddy evidence");
 
     // --- Path 3: switching BACK to a provider loaded earlier in this session
-    //     reads fresh again and never renders the earlier model list behind the
-    //     loading state. ---
+    //     refreshes in the background but keeps the known form on screen. ---
     await selectProvider("command-code");
-    await waitForLoadingMessage("cliInfo", COMMAND_CODE_LOADING_MESSAGE);
-    assert.equal(await page.evaluate(`document.getElementById("defaultModel").disabled`), true, "switch-back: the model selector is locked while loading");
-    assert.equal(await settingSelectOptionCount("defaultModel"), 0, "switch-back: the previously loaded model list is not rendered while loading");
+    assert.equal(
+      await page.evaluate(`document.getElementById("cliInfo").classList.contains("loading")`),
+      false,
+      "switch-back: an already-loaded provider never returns to a loading card"
+    );
+    assert.equal(await page.evaluate(`document.getElementById("defaultModel").disabled`), false, "switch-back: the known model selector remains interactive");
+    assert.deepEqual(
+      await modelOptionTexts("defaultModel"),
+      ["cc/model-a", "cc/model-b"],
+      "switch-back: the known model list remains visible while stale Free-now emphasis is withheld during refresh"
+    );
     await waitFor(() => cc.calls === 2, 10000, "the second Command Code read");
-    assert.equal(cc.calls, 2, "switching back performs a new fresh provider read");
     cc.settleAt(1, {
       ok: true,
       // Current evidence only: cc/model-a is free NOW; cc/model-b is not.
@@ -1110,47 +1116,40 @@ test("Settings always performs a fresh provider read: ONE simple loading message
       page.evaluate,
       () =>
         `(() => {
-          const loading = document.getElementById("cliInfo").classList.contains("loading");
           const options = Array.from(document.getElementById("defaultModel").options).map((option) => option.textContent || "");
-          return !loading && options.includes(${JSON.stringify("cc/model-a · Free now")}) && !options.some((text) => String(text).includes("cc/model-b · Free now"));
+          return options.includes(${JSON.stringify("cc/model-a · Free now")}) && !options.some((text) => String(text).includes("cc/model-b · Free now"));
         })()`,
       60000,
       "the fresh Command Code replacement"
     );
     const ccReplaced = await modelOptionTexts("defaultModel");
-    assert.deepEqual(
-      ccReplaced,
-      ["cc/model-a · Free now", "cc/model-b"],
-      "fresh-only evidence replaces the earlier view (no remembered Free-now)"
-    );
-    console.log("[hub-ui-settings-fresh] EV3 switch-back: fresh read again, earlier view never shown behind the loading state");
+    assert.deepEqual(ccReplaced, ["cc/model-a · Free now", "cc/model-b"], "fresh evidence replaces the temporary unverified presentation");
+    console.log("[hub-ui-settings-fresh] EV3 switch-back: known form stayed visible while a fresh read replaced its billing evidence");
 
-    // --- Path 4: a FAILED read locks the card honestly and never re-renders a
-    //     previous model list. ---
+    // --- Path 4: an already-loaded provider keeps its current form even when a
+    //     background refresh fails; only a short refresh failure is surfaced. ---
     await selectProvider("workbuddy-ai");
-    await waitForLoadingMessage("wbCliInfo", WORKBUDDY_LOADING_MESSAGE);
-    await assertWorkBuddyLoadingPresentation();
+    assert.equal(await page.evaluate(`document.getElementById("wbCliInfo").classList.contains("loading")`), false, "WorkBuddy switch-back never blanks the known form");
+    assert.ok((await modelOptionTexts("wbDefaultModel")).length > 0, "the known WorkBuddy model list stays visible during refresh");
     await waitFor(() => wb.calls === 2, 10000, "the second WorkBuddy read");
     wb.settleAt(1, { ok: true, view: workBuddyAiSettingsView({ models: ["hy3"], offeredModels: ["hy3"] }) });
-    await waitForPage(page.evaluate, () => `!document.getElementById("wbDefaultModel").disabled`, 60000, "the refreshed WorkBuddy view");
+    await waitForPage(page.evaluate, () => `Array.from(document.getElementById("wbDefaultModel").options).some((option) => option.value === "hy3")`, 60000, "the refreshed WorkBuddy view");
 
     await selectProvider("command-code");
-    await waitForLoadingMessage("cliInfo", COMMAND_CODE_LOADING_MESSAGE);
+    assert.equal(await page.evaluate(`document.getElementById("cliInfo").classList.contains("loading")`), false, "Command Code stays visible while its refresh runs");
+    const beforeFailure = await modelOptionTexts("defaultModel");
     await waitFor(() => cc.calls === 3, 10000, "the failing Command Code read");
     cc.settleAt(2, { ok: false, code: "config_invalid", message: "Injected invalid configuration", field: "default_model", raw: "{oops" });
     await waitForPage(
       page.evaluate,
-      () => `(document.getElementById("settingsMessage").innerText || "").includes("Invalid configuration")`,
+      () => `(document.getElementById("settingsMessage").innerText || "").includes("Refresh failed.")`,
       20000,
-      "the honest failed-read message"
+      "the short failed-refresh message"
     );
-    assert.equal(await page.evaluate(`document.getElementById("defaultModel").disabled`), true, "the model selector stays locked after a failed read");
-    assert.equal(await settingSelectOptionCount("defaultModel"), 0, "a failed read never re-renders a previous model list");
-    assert.equal(await page.evaluate(`document.getElementById("saveSettings").disabled`), true, "saving stays disabled after a failed read");
-    await assertLoadingCleared("cliInfo", COMMAND_CODE_LOADING_MESSAGE);
-    await assertNoCardJargon("failed read");
-    console.log("[hub-ui-settings-fresh] EV4 failed read: locked card, no previous model list, honest message");
-
+    assert.equal(await page.evaluate(`document.getElementById("defaultModel").disabled`), false, "a failed background refresh does not lock the current model selector");
+    assert.deepEqual(await modelOptionTexts("defaultModel"), beforeFailure, "a failed background refresh keeps the current model list");
+    await assertNoCardJargon("failed background refresh");
+    console.log("[hub-ui-settings-fresh] EV4 failed background refresh: current form retained, short failure only");
   } finally {
     if (cdp) cdp.close();
     if (chrome) {
@@ -1348,12 +1347,18 @@ test("freshly verified free models lead both Settings model dropdowns; expired o
     assert.equal(await selectedValue("wbDefaultModel"), "hy3", "F: the configured WorkBuddy selection survives the reorder");
     console.log("[hub-ui-free-first] EV-C/D fresh verified free rows lead both dropdowns (labeled + bold), configured selection kept");
 
-    // --- C (fresh switch-back): every switch-back performs a NEW fresh read;
-    //     the earlier view is not rendered while it loads, and only CURRENT
-    //     evidence can drive free-first. ---
+    // --- C (fresh switch-back): every switch-back still performs a NEW fresh
+    //     read, but the known form stays visible. Billing labels are withheld
+    //     during the refresh so old Free-now evidence is never presented as fresh. ---
     await selectProvider("command-code");
-    await waitForPage(page.evaluate, () => `document.getElementById("cliInfo").classList.contains("loading")`, 20000, "the Command Code loading state");
-    assert.equal(await page.evaluate(`document.getElementById("defaultModel").options.length`), 0, "C: the earlier model list is not rendered while the fresh read runs");
+    assert.equal(await page.evaluate(`document.getElementById("cliInfo").classList.contains("loading")`), false, "C: switch-back never blanks the known Command Code form");
+    const ccRefreshing = await modelOptions("defaultModel");
+    assert.deepEqual(
+      ccRefreshing.map((option) => option.value),
+      ["paid/a", "free/a", "paid/b", "free/b"],
+      "C: the known model list stays visible in catalog order while fresh billing evidence is pending"
+    );
+    assert.equal(ccRefreshing.some((option) => option.text.includes("Free now")), false, "C: stale Free-now labels are withheld during refresh");
     await waitFor(() => cc.calls === 2, 30000, "the second Command Code read");
     cc.settleAt(1, {
       ok: true,
@@ -1363,7 +1368,7 @@ test("freshly verified free models lead both Settings model dropdowns; expired o
         defaultModel: "paid/a"
       })
     });
-    await waitForPage(page.evaluate, () => `!document.getElementById("cliInfo").classList.contains("loading")`, 20000, "the fresh Command Code replacement");
+    await waitForPage(page.evaluate, () => `Array.from(document.getElementById("defaultModel").options).some((option) => (option.textContent || "").includes("paid/b · Free now"))`, 20000, "the fresh Command Code replacement");
     const ccReplaced = await modelOptions("defaultModel");
     assert.deepEqual(
       ccReplaced.map((option) => option.value),
@@ -1374,14 +1379,14 @@ test("freshly verified free models lead both Settings model dropdowns; expired o
     assert.equal(ccReplaced.find((option) => option.value === "paid/b")?.bold, true, "the current free row keeps the bold emphasis");
     assert.equal(ccReplaced.find((option) => option.value === "free/a")?.text, "free/a", "a no-longer-free row loses its label");
     assert.equal(await selectedValue("defaultModel"), "paid/a", "F: the configured selection survives the fresh replacement");
-    console.log("[hub-ui-free-first] EV-C switch-back: fresh read replaces the earlier view with current evidence only");
+    console.log("[hub-ui-free-first] EV-C switch-back: known form stayed visible; current fresh evidence replaced its billing labels");
 
-    // --- D (fresh reload + promotion boundary): the boundary triggers a real
-    //     fresh read, and the expired promotion must not stay at the front. ---
+    // --- D (fresh reload + promotion boundary): the refresh is silent and the
+    //     expired promotion must not stay at the front. ---
     await selectProvider("workbuddy-ai");
-    await waitForPage(page.evaluate, () => `document.getElementById("wbCliInfo").classList.contains("loading")`, 20000, "the WorkBuddy loading state");
-    await waitFor(() => wb.calls === 2, 30000, "the second WorkBuddy read");
-    wb.settleAt(1, {
+    assert.equal(await page.evaluate(`document.getElementById("wbCliInfo").classList.contains("loading")`), false, "D: switch-back never blanks the known WorkBuddy form");
+    assert.equal((await modelOptions("wbDefaultModel")).some((option) => option.text.includes("Free now")), false, "D: old WorkBuddy Free-now evidence is withheld while refreshing");
+    await waitFor(() => wb.calls === 2, 30000, "the second WorkBuddy read");    wb.settleAt(1, {
       ok: true,
       view: workBuddyAiSettingsView({
         models: ["hy3", "deepseek-v4.1-flash"],
@@ -1396,7 +1401,7 @@ test("freshly verified free models lead both Settings model dropdowns; expired o
         nextPromotionBoundaryAt: new Date(Date.now() + 1500).toISOString()
       })
     });
-    await waitForPage(page.evaluate, () => `!document.getElementById("wbCliInfo").classList.contains("loading")`, 20000, "the fresh WorkBuddy view");
+    await waitForPage(page.evaluate, () => `Array.from(document.getElementById("wbDefaultModel").options).some((option) => (option.textContent || "").includes("DeepSeek V4.1 Flash · Free now"))`, 20000, "the fresh WorkBuddy view");
     const wbRenewed = await modelOptions("wbDefaultModel");
     assert.deepEqual(
       wbRenewed.map((option) => option.value),
@@ -1408,6 +1413,8 @@ test("freshly verified free models lead both Settings model dropdowns; expired o
     // --- E: the promotion boundary triggers a fresh read, and the expired
     //     promotion must not stay at the front. ---
     await waitFor(() => wb.calls === 3, 30000, "the promotion-boundary read");
+    assert.equal(await page.evaluate(`document.getElementById("wbCliInfo").classList.contains("loading")`), false, "E: the promotion-boundary refresh keeps the WorkBuddy form visible");
+    assert.equal((await modelOptions("wbDefaultModel")).some((option) => option.text.includes("Free now")), false, "E: expired/unverified promotion evidence is removed immediately while the refresh is pending");
     wb.settleAt(2, {
       ok: true,
       view: workBuddyAiSettingsView({
@@ -1440,7 +1447,7 @@ test("freshly verified free models lead both Settings model dropdowns; expired o
 
     // --- req8: a configured model outside the display list stays appended. ---
     await selectProvider("command-code");
-    await waitForPage(page.evaluate, () => `document.getElementById("cliInfo").classList.contains("loading")`, 20000, "the Command Code loading state");
+    assert.equal(await page.evaluate(`document.getElementById("cliInfo").classList.contains("loading")`), false, "req8: switching to a known Command Code view stays immediate");
     await waitFor(() => cc.calls === 3, 30000, "the third Command Code read");
     cc.settleAt(2, {
       ok: true,
@@ -3844,6 +3851,55 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
     );
     console.log(`[hub-ui-cc-effort] EV1 ${DEEPSEEK} Reasoning: ${JSON.stringify(deepseek.values)}`);
 
+    // ---- Save from an internally-unset default: the REAL displayed model is
+    //      persisted, and the post-save catalog/capability refresh never turns
+    //      the model control into a loading placeholder. ----
+    await page.evaluate(`(() => {
+      const select = document.getElementById("permissionMode");
+      select.value = "plan";
+      select.dispatchEvent(new Event("change"));
+    })()`);
+    await waitForPage(page.evaluate, () => `document.getElementById("saveSettings").disabled === false`, 15000, "Save after the permission change");
+    await page.evaluate(`document.getElementById("saveSettings").click()`);
+    await waitForProbe(() => probe.savedPatches.length, "the save PUT");
+    assert.equal(probe.savedPatches[0]?.default_model, DEEPSEEK, "Save persists the real model displayed in the dropdown, never an internal null/CLI-default state");
+    assert.equal(await page.evaluate(`document.getElementById("defaultModel").value`), DEEPSEEK, "the real model remains visible while the post-save refresh is pending");
+    assert.equal(
+      await page.evaluate(`Array.from(document.getElementById("defaultModel").options).some((option) => /loading/i.test(option.textContent || ""))`),
+      false,
+      "Save never replaces the model dropdown with loading copy"
+    );
+    await waitForProbe(() => probe.catalogCalls >= 2 ? 1 : 0, "the post-save catalog read");
+    const postSaveView = commandCodeSettingsView({
+      models: [DEEPSEEK, CANARY],
+      defaultModel: DEEPSEEK,
+      extraMeta: {
+        [DEEPSEEK]: { efforts: ["low", "high", "max"] },
+        [CANARY]: { efforts: ["low", "medium", "xhigh"] }
+      }
+    });
+    postSaveView.config.permission_mode = "plan";
+    postSaveView.config.default_effort = "max";
+    probe.settleCatalog(1, { ok: true, view: postSaveView });
+    await waitForProbe(() => probe.capabilityCalls >= 2 ? 1 : 0, "the post-save capability read");
+    probe.settleCapabilities(1, {
+      ok: true,
+      view: {
+        cli: { available: true, version: "9.9.9-fake", error: null, checked: true },
+        capabilities: { supports_effort: true, permission_modes: ["plan", "accept-edits", "yolo"], checked: true },
+        catalog: null,
+        model_meta: null,
+        observed_default_model: DEEPSEEK
+      }
+    });
+    await waitForPage(page.evaluate, () => `document.getElementById("defaultEffort").disabled === false && document.getElementById("defaultModel").value === ${JSON.stringify(DEEPSEEK)}`, 30000, "the saved model after post-save refresh");
+    assert.equal(
+      await page.evaluate(`Array.from(document.getElementById("defaultModel").options).some((option) => /loading|CLI default/i.test(option.textContent || ""))`),
+      false,
+      "the post-save model list contains only real model choices"
+    );
+    console.log(`[hub-ui-cc-effort] EV1b save: ${DEEPSEEK} stayed visible and was persisted through the post-save refresh`);
+
     // ---- Switching the model re-derives the options LOCALLY, and resets THIS
     //      selection's effort (scoped to its own model) to the provider default. ----
     await selectDefaultModel(CANARY);
@@ -3854,8 +3910,8 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
       "the newly selected model's own list is used, with no effort carried over from the previous model"
     );
     assert.equal(canary.value, "", "switching to a different model resets this selection's effort to the provider default");
-    assert.equal(probe.catalogCalls, 1, "switching the default model performs NO further provider read");
-    assert.equal(probe.capabilityCalls, 1, "switching the default model performs NO further CLI capability probe");
+    assert.equal(probe.catalogCalls, 2, "switching the default model performs NO further provider read after the explicit save refresh");
+    assert.equal(probe.capabilityCalls, 2, "switching the default model performs NO further CLI capability probe after the explicit save refresh");
     console.log(`[hub-ui-cc-effort] EV2 ${CANARY} Reasoning: ${JSON.stringify(canary.values)} (effort reset to provider default)`);
 
     // ---- Switching back to the SAVED model restores the first model's own
@@ -3864,8 +3920,8 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
     const back = await effortState();
     assert.deepEqual(back.values, ["", "low", "high", "max"], "the options follow the selection in both directions");
     assert.equal(back.value, "max", "returning to the saved model restores the effort saved for that model");
-    assert.equal(probe.catalogCalls, 1, "still exactly one provider read for the whole interaction");
-    assert.equal(probe.capabilityCalls, 1, "still exactly one capability probe for the whole interaction");
+    assert.equal(probe.catalogCalls, 2, "the only provider reads are the initial read and the explicit post-save refresh");
+    assert.equal(probe.capabilityCalls, 2, "the only capability reads are the initial read and the explicit post-save refresh");
   } finally {
     if (cdp) cdp.close();
     if (chrome) {
