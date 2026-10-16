@@ -7,9 +7,6 @@ Settings UI regression patch release.
 - WorkBuddy AI no longer shows a catalog warning when a complete reliable provider snapshot model list is already available.
 - Command Code shows the actual current default model directly instead of a `CLI default` pseudo-choice, while still following the CLI default until the user explicitly changes it.
 - Command Code Reasoning remains model-specific for the displayed default and selected fallback models.
-- Provider Settings now show the concise first-load configuration message only for the first usable read; later switch-backs keep the known form visible while fresh verification runs in the background.
-- Command Code keeps the first-load message visible through its initial capability/Reasoning read, so a fast local model catalog cannot make loading feedback disappear immediately.
-- Saving Settings now ends when the config write succeeds instead of waiting for the provider re-read; post-save verification continues in the background without re-locking already-confirmed controls.
 - Provider routing and execution behavior are unchanged.
 
 ## 0.1.7 — 2026-10-15

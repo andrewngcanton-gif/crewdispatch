@@ -25,7 +25,6 @@ GitHub also provides source-code archives automatically. The 0.1.0 manual ZIPs r
 - Command Code and WorkBuddy AI provider adapters.
 - MCP tools for spawn, status, one-shot result collection, follow-up, cancellation, and settings.
 - Local loopback Dashboard for sessions, logs, approvals, provider settings, follow-up, and cancellation.
-- Stable provider-Settings behavior: explicit first-load feedback, non-blocking later refreshes, responsive saves, and model-specific Reasoning guarded by real-browser regressions.
 - Managed install, doctor, upgrade, and uninstall with preservation of user data and edited/unowned files.
 - Installer-managed Codex and Claude caller integrations, with ownership-safe complete uninstall.
 

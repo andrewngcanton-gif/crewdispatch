@@ -14,10 +14,6 @@ Provider-specific discovery, execution, parsing, approvals, and catalog evidence
 
 Current model availability, free status, entitlement, pricing, and provider defaults must come from fresh provider/CLI evidence where the provider exposes it. Static package catalogs may describe model identifiers but are not proof of current commercial or entitlement state.
 
-## Settings UI stability
-
-Provider settings use fresh evidence without turning every refresh into a loading screen. A provider's first usable read may show loading; after that, reopening Settings, switching back to the provider, or verifying a save keeps the known form visible while fresh reads run in the background. Command Code keeps first-load feedback visible while its initial capability read is pending. A successful settings write releases the visible Saving state before provider re-verification finishes. These user-visible invariants are protected by real-browser regressions in the canonical source.
-
 ## Process safety
 
 Cancellation and recovery fail closed when CrewDispatch cannot prove process ownership or termination. A stale PID, ambiguous process tree, or unconfirmed child must not be treated as safely stopped.

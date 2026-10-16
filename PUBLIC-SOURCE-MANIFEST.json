@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "cf674cfb9684b2e8ab6bed4615bd01e652591dfe",
+  "sourceCommit": "1f9c9bb7fdaefee31c15e9cf055406da798bb5a0",
   "sourceDirty": false,
   "files": [
     {
@@ -9,7 +9,7 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "67a6d025caf5170ef07a0ec8b33eedc4821ae55d6d089a649b4cb825e3a7dfa6"
+      "sha256": "183c172e69eba5edab2b2fa3d913cd941ffa3f763107989940f0dc907647df2e"
     },
     {
       "path": ".github/workflows/installer-ci.yml",
@@ -21,15 +21,15 @@
     },
     {
       "path": "ARCHITECTURE.md",
-      "sha256": "a7bdff83d4cf40f3a2d08b25d94483dbd3313701e22542ce727e38c57d6873e7"
+      "sha256": "dc4a8f67a6456661818a38ea8a2259eb26972909adfbd83e4ca84245ce199dd8"
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "13a08724c163992741de66dd50fabb1b1bf5e123c521b431b350be046eb9544e"
+      "sha256": "d47e592d136bcf447cdaa00122404aeea0b33179ff6cbaa2a881e54a34e8d624"
     },
     {
       "path": "CONTRIBUTING.md",
-      "sha256": "5ed03e9da556e2ce83113ed0a8b69bb80050980902e9c854fb7f982b474f2410"
+      "sha256": "4ee4c203ea88e0d9fb0b460fc7cf4a621cebd72d2697e90869b00cb78631c9b8"
     },
     {
       "path": "LICENSE",
@@ -37,7 +37,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "f32380012d3c2b2155907c3a7c80428eb1c68c7bff3cc2f29adedeb9cd6bf7a5"
+      "sha256": "ce95e7e1b9475d1cf45f1ec5b63af0e817769b6adadc58dfb06343d4789c2065"
     },
     {
       "path": "THIRD_PARTY_NOTICES",
@@ -49,7 +49,7 @@
     },
     {
       "path": "docs/dashboard.md",
-      "sha256": "b03db8b92fa10230d35a0b970226b4183df1b3dd060a99f905cf69992aecc3b2"
+      "sha256": "608fc6a8942a1297f2393eb6838b6e8b9709ecf87539174de0239ce6be19d89c"
     },
     {
       "path": "docs/getting-started.md",
@@ -81,7 +81,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "3f2170ea4dbb3991fe3a8806e23aa979c48c2f212cc3504b64b57aa6e80b7aac"
+      "sha256": "bf4a5b85a7976da8d9b431783de842fa9824fabf846cef7e7fee5da768038d70"
     },
     {
       "path": "plugins/crewdispatch/.codex-plugin/plugin.json",
@@ -158,6 +158,10 @@
     {
       "path": "scripts/run-release-cleanroom-ci.cjs",
       "sha256": "5b167a4b6e9cfff9b0d42a288c21a204311d38d627814bfd7b21c2a998c64a1e"
+    },
+    {
+      "path": "scripts/run-settings-ui-contract.cjs",
+      "sha256": "5ef0cc0f20306da866be7d2c427fab7b1eeb36c764e920ae4e595544424905c7"
     },
     {
       "path": "scripts/run-tests.cjs",
