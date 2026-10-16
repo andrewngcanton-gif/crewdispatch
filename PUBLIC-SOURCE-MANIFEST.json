@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "1f9c9bb7fdaefee31c15e9cf055406da798bb5a0",
+  "sourceCommit": "5d89a194aecdffedd18d24cd4ff0d714e2f1ae71",
   "sourceDirty": false,
   "files": [
     {
@@ -773,7 +773,7 @@
     },
     {
       "path": "src/tests/integration/hub-ui-browser.test.ts",
-      "sha256": "2d3d3fc58937e9573b404c148711ddfeea5ac54d79d0a5b964c043403df6a6ac"
+      "sha256": "5168d016adace2f145c032bd58b542742ed26315355fe79481df70c84a87cc45"
     },
     {
       "path": "src/tests/integration/hub-ui-coherence.test.ts",
@@ -1141,11 +1141,11 @@
     },
     {
       "path": "src/ui/client.ts",
-      "sha256": "932cab3cb9a369c66bcd830f7be6260a5951c976a437338dc2bf1f687b141534"
+      "sha256": "b7b7034ee6b9d1ab5bdaa31724e54d8123009cfd33cc0ae8c11eed9ccde9bf71"
     },
     {
       "path": "src/ui/page.ts",
-      "sha256": "3ed1b973efeff55534d55aeda6e646ca4421eba4bdac371fb84502430bdfb061"
+      "sha256": "ef425113c358425f65997de0bd91c89e6c0baa66904d3e2cca61fdf1f054dc81"
     },
     {
       "path": "tsconfig.browser.json",

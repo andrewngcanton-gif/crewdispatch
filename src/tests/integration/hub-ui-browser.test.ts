@@ -74,8 +74,8 @@ const PLAN_NOTE_MARKER = "Suggests changes without editing project files";
 const STANDARD_NOTE_TEXT = "May request permission to edit files or run commands.";
 const PLAN_NOTE_TEXT = "Suggests changes without editing project files.";
 const ACCEPT_EDITS_NOTE_TEXT = "Auto-approves normal edits; commands may need approval.";
-const COMMAND_CODE_YOLO_NOTE_TEXT = "Skips routine approvals; explicit rules and safety checks still apply.";
-const WORKBUDDY_YOLO_NOTE_TEXT = "Runs most actions automatically; risky commands may need approval.";
+const COMMAND_CODE_YOLO_NOTE_TEXT = "Recommended. Skips routine approvals; explicit rules and safety checks still apply.";
+const WORKBUDDY_YOLO_NOTE_TEXT = "Recommended. Runs most actions automatically; risky commands may need approval.";
 const WORKBUDDY_FULL_ACCESS_NOTE_TEXT = "Skips permission checks; repeated actions may still pause the task.";
 const PROVIDER_RULES_NOTE_TEXT = "Provider rules apply; approvals may pause the task.";
 const POLL_CYCLE_MS = 2500;
@@ -991,24 +991,16 @@ test("Settings refreshes providers without blanking an already-loaded form", { t
       );
     };
 
-    /**
-     * Command Code's loading behavior is unchanged: its own copy with the
-     * shared semibold status styling, and never the WorkBuddy-only modifier.
-     */
+    /** Command Code uses the same first-load copy and normal-weight styling as WorkBuddy AI. */
     const assertCommandCodeLoadingPresentation = async (): Promise<void> => {
       const lines = await page.evaluate(
         `Array.from(document.getElementById("cliInfo").children).map((el) => el.textContent || "")`
       );
       assert.deepEqual(lines, [COMMAND_CODE_LOADING_MESSAGE], "Command Code keeps its own single loading message");
       assert.equal(
-        await page.evaluate(`document.getElementById("cliInfo").classList.contains("wb-loading")`),
-        false,
-        "the WorkBuddy-only presentation modifier never applies to Command Code"
-      );
-      assert.equal(
         await page.evaluate(`getComputedStyle(document.getElementById("cliInfo").firstElementChild).fontWeight`),
-        "650",
-        "Command Code's loading line keeps the shared semibold status styling"
+        "400",
+        "Command Code's visible loading text has the same normal font weight as WorkBuddy AI"
       );
     };
 
@@ -3837,6 +3829,11 @@ test("Command Code Reasoning offers exactly the selected model's own efforts and
       false,
       "the model dropdown exposes only real model choices, never the internal CLI-default state"
     );
+    assert.equal(
+      await page.evaluate(`document.getElementById("yoloWarning").textContent`),
+      COMMAND_CODE_YOLO_NOTE_TEXT,
+      "Command Code yolo keeps the shared Recommended guidance in the contract test"
+    );
 
     // ---- The SELECTED model's own list, and nothing else. ----
     const deepseek = await effortState();
@@ -4577,6 +4574,8 @@ test("WorkBuddy Full Access and default/fallback Reasoning save and reopen from 
     })()`);
     const workBuddyYoloNote = String(await page.evaluate(`document.getElementById("wbYoloWarning").textContent`));
     assert.equal(workBuddyYoloNote, WORKBUDDY_YOLO_NOTE_TEXT, "WorkBuddy yolo states its high-risk approval ask honestly");
+    assert.match(workBuddyYoloNote, /^Recommended\./, "WorkBuddy yolo is visibly marked as the recommended normal mode");
+    assert.doesNotMatch(fullAccessNote, /Recommended/i, "Full Access remains distinct from the recommended yolo mode");
     assert.notEqual(workBuddyYoloNote, fullAccessNote, "WorkBuddy yolo and Full Access are explained as distinct behaviors");
     assert.equal(wb.savedPatches.length, 2, "the yolo preview was not saved");
     console.log(

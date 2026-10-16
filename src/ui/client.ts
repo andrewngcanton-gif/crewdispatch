@@ -232,8 +232,8 @@ const EFFORT_LEVELS = ["minimal", "low", "medium", "high", "xhigh", "max"] as co
 const STANDARD_PERMISSION_NOTE = "May request permission to edit files or run commands.";
 const PLAN_PERMISSION_NOTE = "Suggests changes without editing project files.";
 const ACCEPT_EDITS_PERMISSION_NOTE = "Auto-approves normal edits; commands may need approval.";
-const COMMAND_CODE_YOLO_NOTE = "Skips routine approvals; explicit rules and safety checks still apply.";
-const WORKBUDDY_YOLO_NOTE = "Runs most actions automatically; risky commands may need approval.";
+const COMMAND_CODE_YOLO_NOTE = "Recommended. Skips routine approvals; explicit rules and safety checks still apply.";
+const WORKBUDDY_YOLO_NOTE = "Recommended. Runs most actions automatically; risky commands may need approval.";
 const WORKBUDDY_FULL_ACCESS_NOTE = "Skips permission checks; repeated actions may still pause the task.";
 const PROVIDER_RULES_PERMISSION_NOTE = "Provider rules apply; approvals may pause the task.";
 
@@ -846,10 +846,8 @@ const WORKBUDDY_LOADING_MESSAGE = PROVIDER_INITIAL_LOADING_MESSAGE;
  * while the initial capability phase runs, so a fast catalog cannot make the
  * user miss the loading feedback. The model form itself is not blocked.
  *
- * WorkBuddy AI's first-read line stays at normal weight, so it
- * carries a provider-specific modifier instead of weakening the shared
- * `.settings-status > div:first-child` style (weight 650) that non-loading
- * status/error copy also relies on.
+ * First-read loading copy uses the same normal-weight presentation for every
+ * provider; non-loading status/error copy keeps the shared semibold style.
  */
 function renderProviderLoadingState(
   info: HTMLElement,
@@ -860,7 +858,6 @@ function renderProviderLoadingState(
   showLines(info, [provider === "command-code" ? COMMAND_CODE_LOADING_MESSAGE : WORKBUDDY_LOADING_MESSAGE]);
   info.classList.remove("hidden", "warning");
   info.classList.add("loading");
-  info.classList.toggle("wb-loading", provider === "workbuddy-ai");
   catalog.classList.add("hidden");
   effective.classList.add("hidden");
 }
@@ -1677,7 +1674,7 @@ function renderWorkBuddySettings(): void {
     lockProviderCard(ui.wbCard);
     return;
   }
-  for (const item of [ui.wbCliInfo, ui.wbCatalogInfo, ui.wbEffectiveInfo]) item.classList.remove("loading", "wb-loading");
+  for (const item of [ui.wbCliInfo, ui.wbCatalogInfo, ui.wbEffectiveInfo]) item.classList.remove("loading");
   if (workBuddySettingsState.readError !== null) {
     ui.wbCliInfo.classList.remove("hidden");
     ui.wbCliInfo.classList.add("warning");
