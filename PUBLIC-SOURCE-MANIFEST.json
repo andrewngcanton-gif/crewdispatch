@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "7b84571cfd1e9e032f03c9b7aa2782cd93cf8c9e",
+  "sourceCommit": "61c0d497691beff7a6d30c076c48de53f4a8e8a7",
   "sourceDirty": false,
   "files": [
     {
@@ -337,7 +337,7 @@
     },
     {
       "path": "src/install/autostart-macos.ts",
-      "sha256": "aa002f066a87d2bd6a6c40c2351af28e84005d4fef6f3112132008e15e15c343"
+      "sha256": "6ef214fa85a8413ed0c57fa9891fca49f615602e92927357e9b151a32a9490d5"
     },
     {
       "path": "src/install/autostart-windows.ts",
@@ -897,7 +897,7 @@
     },
     {
       "path": "src/tests/unit/autostart.test.ts",
-      "sha256": "630157760e8f6d33f975527fb06f34e93b75acdbb55ad26c13bf430e4e25755f"
+      "sha256": "6901bc0b6773afaefd275ecda1d3faf751d2d2d3d1c7d145e27d0ce1cfd299e2"
     },
     {
       "path": "src/tests/unit/capability.test.ts",
