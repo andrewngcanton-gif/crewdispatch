@@ -144,7 +144,7 @@ export const HUB_HTML = `<!doctype html>
     .settings-status > div:first-child { color:var(--ink); font-weight:650; }
     .settings-status.warning { padding:8px 10px; border:1px solid #f1d09c; border-radius:8px; background:#fff8e9; color:#92560b; }
     .settings-status.warning > div:first-child { color:#92560b; }
-    .settings-status.loading.wb-loading > div:first-child { font-weight:400; }
+    .settings-status.loading > div:first-child { font-weight:400; }
     .settings-status.loading > div:first-child::before { content:""; display:inline-block; width:10px; height:10px; margin-right:7px; border:2px solid var(--line); border-top-color:var(--blue); border-radius:50%; vertical-align:-1px; animation:settings-spin .8s linear infinite; }
     @keyframes settings-spin { to { transform:rotate(360deg); } }
     @media (prefers-reduced-motion: reduce) { .settings-status.loading > div:first-child::before { animation:none; border-top-color:var(--line); } }

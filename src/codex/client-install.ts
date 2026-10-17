@@ -225,7 +225,17 @@ export function installCodexClient(targetArg: string, opts: CodexClientOptions =
   const existingManifestFile = manifestPath(env, platform);
   if (fs.existsSync(existingManifestFile)) {
     const existingManifest = readManifest(env, platform);
-    if (!existingManifest || canonicalCodexOwnershipPath(existingManifest.target, platform) !== canonicalCodexOwnershipPath(target, platform)) {
+    const differentTarget = existingManifest !== null
+      && canonicalCodexOwnershipPath(existingManifest.target, platform) !== canonicalCodexOwnershipPath(target, platform);
+    if (differentTarget && !fs.existsSync(existingManifest.target)) {
+      const retired = uninstallCodexClient(existingManifest.target, opts);
+      if (retired.ok) warnings.push("Retired a stale CrewDispatch Codex registration from an absent previous install location.");
+      else {
+        warnings.push(...retired.warnings);
+        conflicts.push(...retired.conflicts);
+      }
+    }
+    if (!existingManifest || (differentTarget && fs.existsSync(existingManifestFile))) {
       conflicts.push({ target: existingManifestFile, reason: "an unrecognized or different-install CrewDispatch Codex ownership manifest was preserved" });
       return {
         ok: false,
@@ -235,7 +245,7 @@ export function installCodexClient(targetArg: string, opts: CodexClientOptions =
         marketplace: { ok: false, skipped: true },
         plugin: { ok: false, skipped: true },
         prompt: { ok: false, skipped: true },
-        warnings: ["Codex caller integration was not changed because its ownership manifest could not be safely reused."],
+        warnings: [...warnings, "Codex caller integration was not changed because its ownership manifest could not be safely reused."],
         conflicts
       };
     }

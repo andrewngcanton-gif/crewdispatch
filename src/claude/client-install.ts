@@ -42,6 +42,14 @@ const MCP_SERVER_NAME = "crewdispatch";
 const SKILL_REL = path.join("skills", "crewdispatch", "SKILL.md");
 const COMMAND_REL = path.join("commands", "crewdispatch.md");
 const MANIFEST_FILE = "crewdispatch-install.json";
+const DISPOSABLE_TEST_ROOT_PREFIXES = [
+  "jobquay-claude-packaged-",
+  "jobquay-license-preserve-",
+  "jobquay-notice-preserve-",
+  "jobquay-release-candidate-",
+  "jobquay-installed-cc-",
+  "crewdispatch-cleanroom-"
+] as const;
 /** Documented minimum Claude Code version for all-provider cross-session messaging. */
 export const CLAUDE_MESSAGING_MIN_VERSION = "2.1.248";
 
@@ -153,6 +161,59 @@ function deepEqual(a: unknown, b: unknown): boolean {
     return ka.length === kb.length && ka.every((k, i) => k === kb[i] && deepEqual(a[k], b[k]));
   }
   return false;
+}
+
+function canonicalPathForComparison(value: string): string {
+  const resolved = path.resolve(value);
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
+function isInsidePath(parent: string, child: string): boolean {
+  const rel = path.relative(canonicalPathForComparison(parent), canonicalPathForComparison(child));
+  return rel !== "" && !rel.startsWith(`..${path.sep}`) && rel !== ".." && !path.isAbsolute(rel);
+}
+
+/**
+ * Recognise ONLY an already-absent CrewDispatch test-runtime asset under a
+ * known disposable temp root. This is deliberately much narrower than "a path
+ * under /tmp": a real/user-owned entry is never claimed merely because it is
+ * missing. The legacy prefixes are the exact automated test roots that could
+ * leak caller registrations after core install began auto-installing callers.
+ */
+function isStaleCrewDispatchTestAsset(value: unknown, suffix: string[]): boolean {
+  if (typeof value !== "string" || !path.isAbsolute(value) || fs.existsSync(value)) return false;
+  const absolute = path.resolve(value);
+  const normalizedSuffix = path.join(...suffix);
+  if (!absolute.endsWith(normalizedSuffix)) return false;
+
+  const bases = new Set<string>();
+  for (const candidate of [os.tmpdir(), process.platform === "darwin" ? "/private/tmp" : null]) {
+    if (!candidate) continue;
+    try { bases.add(fs.realpathSync.native(candidate)); }
+    catch { bases.add(path.resolve(candidate)); }
+  }
+  for (const base of bases) {
+    if (!isInsidePath(base, absolute)) continue;
+    const rel = path.relative(canonicalPathForComparison(base), canonicalPathForComparison(absolute));
+    const first = rel.split(path.sep)[0] || "";
+    if (DISPOSABLE_TEST_ROOT_PREFIXES.some((prefix) => first.startsWith(prefix))) return true;
+  }
+  return false;
+}
+
+function isStaleCrewDispatchTestMcpEntry(entry: unknown): boolean {
+  if (!isPlainObject(entry) || !Array.isArray(entry.args) || entry.args.length !== 1) return false;
+  return isStaleCrewDispatchTestAsset(entry.args[0], ["dist", "mcp", "server.js"]);
+}
+
+function staleCrewDispatchTestHook(entry: unknown, mode: "session-start" | "session-end"): boolean {
+  if (!isPlainObject(entry) || Object.keys(entry).length !== 1 || !Array.isArray(entry.hooks) || entry.hooks.length !== 1) return false;
+  const hook = entry.hooks[0];
+  if (!isPlainObject(hook) || hook.type !== "command" || typeof hook.command !== "string") return false;
+  const match = /^(?:"([^"]+)"|(\S+))\s+(?:"([^"]+)"|(\S+))\s+(session-start|session-end)$/.exec(hook.command.trim());
+  if (!match || match[5] !== mode) return false;
+  const hookPath = match[3] ?? match[4];
+  return isStaleCrewDispatchTestAsset(hookPath, ["dist", "claude", "hook.js"]);
 }
 
 /**
@@ -396,7 +457,12 @@ export function installClaudeClient(opts: ClaudeClientOptions = {}): ClaudeClien
     conflicts.push({ target: `${paths.userConfigFile}#mcpServers`, reason: "existing mcpServers is not a JSON object" });
   } else {
     const mcpServers = isPlainObject(mcpServersRaw) ? mcpServersRaw : {};
-    const current = mcpServers[MCP_SERVER_NAME];
+    let current = mcpServers[MCP_SERVER_NAME];
+    if (isStaleCrewDispatchTestMcpEntry(current)) {
+      delete mcpServers[MCP_SERVER_NAME];
+      current = undefined;
+      changed.push("mcpServers.crewdispatch (removed stale disposable-test registration)");
+    }
     if (current === undefined) {
       mcpServers[MCP_SERVER_NAME] = desiredMcpEntry;
       changed.push("mcpServers.crewdispatch");
@@ -437,6 +503,13 @@ export function installClaudeClient(opts: ClaudeClientOptions = {}): ClaudeClien
         return;
       }
       const arr = Array.isArray(list) ? list : [];
+      const withoutStaleTestHooks = arr.filter((entry) => !staleCrewDispatchTestHook(entry, event === "SessionStart" ? "session-start" : "session-end"));
+      if (withoutStaleTestHooks.length !== arr.length) {
+        arr.splice(0, arr.length, ...withoutStaleTestHooks);
+        hooks[event] = arr;
+        changed.push(`${label} (removed ${arr.length === 0 ? "stale" : "stale duplicate"} disposable-test registration)`);
+        settingsChanged.value = true;
+      }
       const command = (desired.hooks as Array<Record<string, unknown>>)[0]!.command as string;
       const index = arr.findIndex((entry) => containsCommand(entry, command));
       const recordedCommand = recorded && Array.isArray(recorded.hooks)

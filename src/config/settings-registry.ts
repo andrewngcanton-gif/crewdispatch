@@ -24,30 +24,76 @@ import {
 export const COMMAND_CODE_SETTINGS_ID = "command-code";
 export const WORKBUDDY_AI_SETTINGS_ID = "workbuddy-ai";
 
-/** The provider settings definitions used by the Hub (and the probe worker). */
-export function defaultSettingsProviders(): SettingsProviderDefinition<any>[] {
-  const commandCode: SettingsProviderDefinition<SettingsView> = {
+/**
+ * The feature profile that tells the shared Settings contract which OPTIONAL
+ * provider capabilities must receive extra coverage. The core loading/refresh/
+ * save/stale-response rules are mandatory for every registered provider and
+ * therefore are not opt-out booleans here.
+ */
+export interface SettingsUiContractProfile {
+  readonly readStrategy: "single-phase" | "catalog-capabilities";
+  readonly modelSpecificReasoning: boolean;
+  readonly billingPromotions: boolean;
+  readonly recommendedPermissionMode: string | null;
+}
+
+/** A production-registered provider must declare its Settings UI contract profile. */
+export interface RegisteredSettingsProviderDefinition<TView = unknown> extends SettingsProviderDefinition<TView> {
+  readonly uiContract: SettingsUiContractProfile;
+}
+
+/**
+ * The ONE production provider registry. Its literal keys become the registered
+ * provider-id union used by contract fixtures/tests. Adding an active provider
+ * here therefore expands that union and makes missing contract coverage a
+ * compile/test failure instead of an easy-to-forget checklist item.
+ */
+const DEFAULT_SETTINGS_PROVIDER_DEFINITIONS = {
+  [COMMAND_CODE_SETTINGS_ID]: {
     id: COMMAND_CODE_SETTINGS_ID,
+    uiContract: {
+      readStrategy: "catalog-capabilities",
+      modelSpecificReasoning: true,
+      billingPromotions: true,
+      recommendedPermissionMode: "yolo"
+    },
     // `phase` lets the Hub UI ask for the process-free catalog phase (prompt
     // model list + Free-now) while MCP/embedding keep the complete `full` read.
-    read: (root, env, phase) => readSettings(root, { env, phase: phase ?? "full" }),
+    read: (root: string, env: NodeJS.ProcessEnv, phase?: "catalog" | "full") => readSettings(root, { env, phase: phase ?? "full" }),
     // The capability phase is the ONLY part that spawns the CLI; it is served
     // as a separate later read so it can never gate the first form render. The
     // config layer names its result a `patch` (it is applied to an already
     // rendered view); the shared read path speaks in `view`s, so adapt here.
-    readCapabilities: async (root, env) => {
+    readCapabilities: async (root: string, env: NodeJS.ProcessEnv) => {
       const result = await readSettingsCapabilities(root, { env });
       return result.ok ? { ok: true, view: result.patch } : result;
     },
-    applyPatch: (root, patch) => configView(updateConfig(root, configPatchFromSnake(patch)).config)
-  };
-  const workBuddyAi: SettingsProviderDefinition<WorkBuddyAiSettingsView> = {
+    applyPatch: (root: string, patch: Record<string, unknown>) => configView(updateConfig(root, configPatchFromSnake(patch)).config)
+  } satisfies RegisteredSettingsProviderDefinition<SettingsView>,
+  [WORKBUDDY_AI_SETTINGS_ID]: {
     id: WORKBUDDY_AI_SETTINGS_ID,
-    read: (root, env) => readWorkBuddyAiSettings(root, { env }),
-    applyPatch: (root, patch) =>
+    uiContract: {
+      readStrategy: "single-phase",
+      modelSpecificReasoning: true,
+      billingPromotions: true,
+      recommendedPermissionMode: "full-access"
+    },
+    read: (root: string, env: NodeJS.ProcessEnv) => readWorkBuddyAiSettings(root, { env }),
+    applyPatch: (root: string, patch: Record<string, unknown>) =>
       workBuddyAiConfigView(updateWorkBuddyAiConfig(root, workBuddyAiConfigPatchFromSnake(patch)).config)
-  };
-  return [commandCode, workBuddyAi];
+  } satisfies RegisteredSettingsProviderDefinition<WorkBuddyAiSettingsView>
+} as const;
+
+export type DefaultSettingsProviderId = keyof typeof DEFAULT_SETTINGS_PROVIDER_DEFINITIONS;
+
+/** Stable provider order used by the Hub and contract coverage. */
+export const DEFAULT_SETTINGS_PROVIDER_IDS: readonly DefaultSettingsProviderId[] = Object.freeze(
+  Object.keys(DEFAULT_SETTINGS_PROVIDER_DEFINITIONS) as DefaultSettingsProviderId[]
+);
+
+/** The provider settings definitions used by the Hub (and the probe worker). */
+export function defaultSettingsProviders(): RegisteredSettingsProviderDefinition<any>[] {
+  return DEFAULT_SETTINGS_PROVIDER_IDS.map((id) => DEFAULT_SETTINGS_PROVIDER_DEFINITIONS[id]);
 }
 
 let sharedReads: ProviderSettingsReads | null = null;

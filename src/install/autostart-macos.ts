@@ -187,6 +187,7 @@ export function makeMacLaunchAgentSpec(
   const nodePath = path.resolve(options.nodePath ?? resolveUserNodeRuntime(env, "darwin")?.path ?? process.execPath);
   const cliEntry = path.join(root, "dist", "cli", "jobquay-cli.js");
   const environmentVariables: Record<string, string> = { JOBQUAY_DATA_ROOT: dataRoot };
+  if (typeof env.PATH === "string" && env.PATH.trim()) environmentVariables.PATH = env.PATH.trim();
   if (typeof env.HUB_PORT === "string" && env.HUB_PORT.trim()) environmentVariables.HUB_PORT = env.HUB_PORT.trim();
   else if (typeof env.PORT === "string" && env.PORT.trim()) environmentVariables.PORT = env.PORT.trim();
   return {

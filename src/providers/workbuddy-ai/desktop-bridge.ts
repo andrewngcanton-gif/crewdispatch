@@ -298,6 +298,62 @@ export function workBuddyDesktopSidecarPid(
   catch { return null; }
 }
 
+interface WorkBuddyRecoveryOwnerReceipt {
+  version: 1;
+  helperPid: number;
+  helperCreatedAtUs: number;
+  sidecarPid: number;
+}
+
+export function workBuddyRecoveryOwnerReceiptPath(dataRoot: string): string {
+  return path.join(path.resolve(dataRoot), "provider-runtime", "workbuddy-ai", "recovery-owner.json");
+}
+
+export function recordWorkBuddyRecoveryOwner(
+  dataRoot: string,
+  helperPid: number,
+  helperCreatedAtUs: number,
+  sidecarPid: number
+): void {
+  if (
+    !Number.isSafeInteger(helperPid) || helperPid <= 0 ||
+    !Number.isSafeInteger(helperCreatedAtUs) || helperCreatedAtUs <= 0 ||
+    !Number.isSafeInteger(sidecarPid) || sidecarPid <= 0
+  ) {
+    throw new Error("WorkBuddy recovery owner identity is invalid.");
+  }
+  const file = workBuddyRecoveryOwnerReceiptPath(dataRoot);
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  const record: WorkBuddyRecoveryOwnerReceipt = { version: 1, helperPid, helperCreatedAtUs, sidecarPid };
+  const temp = file + ".tmp-" + process.pid + "-" + crypto.randomBytes(4).toString("hex");
+  fs.writeFileSync(temp, JSON.stringify(record), { mode: 0o600 });
+  fs.renameSync(temp, file);
+}
+
+/**
+ * Exact CrewDispatch-spawned owner of the current recovered WorkBuddy sidecar.
+ * The receipt is accepted only while BOTH the provider-owned sidecar PID still
+ * matches and the helper PID is the exact recorded process incarnation.
+ */
+export function workBuddyRecoveryOwnerPid(dataRoot: string, sidecarPid: number): number | null {
+  if (!Number.isSafeInteger(sidecarPid) || sidecarPid <= 0) return null;
+  let parsed: unknown;
+  try { parsed = JSON.parse(fs.readFileSync(workBuddyRecoveryOwnerReceiptPath(dataRoot), "utf8")); }
+  catch { return null; }
+  const obj = asObject(parsed);
+  const helperPid = Number(obj?.helperPid);
+  const helperCreatedAtUs = Number(obj?.helperCreatedAtUs);
+  const recordedSidecarPid = Number(obj?.sidecarPid);
+  if (
+    Number(obj?.version) !== 1 ||
+    !Number.isSafeInteger(helperPid) || helperPid <= 0 ||
+    !Number.isSafeInteger(helperCreatedAtUs) || helperCreatedAtUs <= 0 ||
+    recordedSidecarPid !== sidecarPid
+  ) return null;
+  const identity = captureProcessIdentity(helperPid);
+  return identity?.createdAtUs === helperCreatedAtUs ? helperPid : null;
+}
+
 function sidecarPidFileExists(configDir: string): boolean {
   try { return fs.statSync(workBuddyDesktopSidecarPidPath(configDir)).isFile(); } catch { return false; }
 }
@@ -351,6 +407,10 @@ export function workBuddyDesktopMacRuntimeEnv(
   env.CODEBUDDY_CONFIG_DIR = configDir;
   env.WORKBUDDY_CONFIG_DIR = configDir;
   env.CODEBUDDY_FORCE_HEADLESS_BUNDLE = "1";
+  // Newer WorkBuddy packages may ship only the lite-wb non-TUI bundle. The
+  // launcher prioritizes this flag; older launchers ignore it and keep using
+  // the headless flag above.
+  env.CODEBUDDY_FORCE_LITE_WB_BUNDLE = "1";
   return env;
 }
 
@@ -414,7 +474,7 @@ async function connectSidecarMeta(meta: SidecarPidFile, configDir: string): Prom
   return sidecar;
 }
 
-async function connectDesktopSidecarWithRecovery(cliPath: string, configDir: string): Promise<SidecarClient> {
+async function connectDesktopSidecarWithRecovery(cliPath: string, configDir: string, dataRoot: string | null = null): Promise<SidecarClient> {
   const allowWindowsSelfRecovery = process.platform === "win32";
   const allowDarwinAppManagedRecovery = process.platform === "darwin";
   let meta: SidecarPidFile | null = null;
@@ -454,7 +514,7 @@ async function connectDesktopSidecarWithRecovery(cliPath: string, configDir: str
   }
 
   if (allowDarwinAppManagedRecovery) {
-    const recovered = await ensureMacDesktopSidecarViaOfficialManager(cliPath, configDir);
+    const recovered = await ensureMacDesktopSidecarViaOfficialManager(cliPath, configDir, dataRoot);
     return await connectAuthenticatedSidecar(cliPath, recovered, configDir);
   }
   if (!allowWindowsSelfRecovery) {
@@ -539,7 +599,7 @@ function workBuddyDesktopAppIdentity(appExe: string): { pid: number; createdAtUs
     : null;
 }
 
-async function ensureMacDesktopSidecarViaOfficialManager(cliPath: string, configDir: string): Promise<SidecarPidFile> {
+async function ensureMacDesktopSidecarViaOfficialManager(cliPath: string, configDir: string, dataRoot: string | null = null): Promise<SidecarPidFile> {
   const appExe = desktopExecutableFromCli(cliPath);
   const appIdentity = workBuddyDesktopAppIdentity(appExe);
   if (!appIdentity) {
@@ -611,9 +671,20 @@ async function ensureMacDesktopSidecarViaOfficialManager(cliPath: string, config
   }
   // After the ACK the helper stays detached as the exact app-lifetime owner of the
   // recovered sidecar. It emits no more output; sever our pipe and release it.
+  const recovered = readSidecarPidFile(configDir);
+  const helperIdentity = child.pid == null ? null : captureProcessIdentity(child.pid);
   child.stdout.destroy();
   child.unref();
-  return readSidecarPidFile(configDir);
+  if (dataRoot) {
+    if (!helperIdentity?.createdAtUs) {
+      throw new Error("WorkBuddy recovery owner process identity could not be pinned.");
+    }
+    // Persist ONLY the exact helper incarnation CrewDispatch itself just spawned.
+    // The worker uses this bounded receipt to exclude the app-lifetime helper (and
+    // therefore its sidecar subtree) from the disposable bridge tree snapshot.
+    recordWorkBuddyRecoveryOwner(dataRoot, child.pid!, helperIdentity.createdAtUs, recovered.pid);
+  }
+  return recovered;
 }
 
 function workBuddyDesktopAsarPath(cliPath: string): string {
@@ -1573,7 +1644,7 @@ async function main(): Promise<void> {
       : null;
 
   const configDir = workBuddyDesktopConfigDir();
-  const sidecar = await connectDesktopSidecarWithRecovery(args.cliPath, configDir);
+  const sidecar = await connectDesktopSidecarWithRecovery(args.cliPath, configDir, args.dataRoot);
   let acp: AcpClient | null = null;
   let acpSessionId: string | null = null;
   let terminating = false;

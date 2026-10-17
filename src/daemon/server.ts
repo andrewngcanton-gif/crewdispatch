@@ -158,7 +158,7 @@ export async function startDaemon(rootInput: string, opts: StartDaemonOptions = 
       await recoverTerminalHolders(root, {
         by: input.by,
         includeJob: input.includeJob,
-        ignoredPidsFor: (job) => providerManagedIgnoredPids(job, fixtureEnv),
+        ignoredPidsFor: (job) => providerManagedIgnoredPids(job, fixtureEnv, root),
         readBootTimeFn,
         enumerateFn
       });

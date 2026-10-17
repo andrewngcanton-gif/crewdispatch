@@ -11,7 +11,7 @@
 // This module exists so both the job service and the provider-cancel lifecycle
 // use the SAME rule without importing each other.
 import { WORKBUDDY_AI_PROVIDER, workBuddyAiProfileEnv } from "../providers/workbuddy-ai/index";
-import { workBuddyDesktopConfigDir, workBuddyDesktopSidecarPid } from "../providers/workbuddy-ai/desktop-bridge";
+import { workBuddyDesktopConfigDir, workBuddyDesktopSidecarPid, workBuddyRecoveryOwnerPid } from "../providers/workbuddy-ai/desktop-bridge";
 import type { JobRecord } from "./types";
 
 /**
@@ -22,11 +22,26 @@ import type { JobRecord } from "./types";
  * from provider-owned metadata: an unknown PID is never guessed from a name, a
  * path or a cwd.
  */
-export function providerManagedIgnoredPids(job: JobRecord, env: NodeJS.ProcessEnv = process.env): ReadonlySet<number> {
+export function providerManagedIgnoredPids(
+  job: JobRecord,
+  env: NodeJS.ProcessEnv = process.env,
+  dataRoot: string | null = null
+): ReadonlySet<number> {
   const ignored = new Set<number>();
   if (job.provider !== WORKBUDDY_AI_PROVIDER) return ignored;
   const profileEnv = workBuddyAiProfileEnv(env);
   const pid = workBuddyDesktopSidecarPid(workBuddyDesktopConfigDir(profileEnv));
-  if (pid != null) ignored.add(pid);
+  if (pid != null) {
+    ignored.add(pid);
+    // A macOS post-reopen recovery helper is intentionally app-lifetime owned,
+    // not disposable job work. During the ONE bridge that spawned it, Darwin
+    // still reports that detached helper as a descendant until the bridge exits.
+    // Ignore it only from CrewDispatch's exact persisted PID+birth receipt and
+    // only while it still owns the provider's CURRENT sidecar PID.
+    if (dataRoot) {
+      const ownerPid = workBuddyRecoveryOwnerPid(dataRoot, pid);
+      if (ownerPid != null) ignored.add(ownerPid);
+    }
+  }
   return ignored;
 }
