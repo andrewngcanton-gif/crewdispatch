@@ -22,6 +22,8 @@ Cancellation and recovery fail closed when CrewDispatch cannot prove process own
 
 Installed program files are managed separately from the user data root. Upgrade/uninstall may remove only installer-owned, hash-matching files; user-edited and unowned files are preserved and reported. User data is not deleted by the normal uninstall path.
 
+Automated installer and clean-room tests must use disposable user/caller profile roots rather than the developer's real Codex or Claude configuration. Ownership-safe repair may retire a missing previous CrewDispatch registration only when the installer can prove it belongs to CrewDispatch; unrelated or development integrations are preserved.
+
 ## Runtime prerequisites
 
 CrewDispatch uses the user's Node.js installation (Node 22+). It does not bundle, replace, or globally configure Node/npm. Command Code and WorkBuddy AI remain external products and retain their own installation/runtime requirements.

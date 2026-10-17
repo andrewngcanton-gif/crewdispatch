@@ -14,8 +14,10 @@ CrewDispatch does not modify the global `PATH`, does not install provider accoun
 
 The latest GitHub Release provides normal installers:
 
-- `CrewDispatch-Setup-0.1.8.exe` — Windows x64, per-user installer.
-- `CrewDispatch-0.1.8.pkg` — macOS installer for Apple Silicon and Intel.
+Only artifacts attached to an official GitHub Release are public releases; local/private test packages with another filename or commit suffix are not release evidence.
+
+- `CrewDispatch-Setup-0.1.9.exe` — Windows x64, per-user installer.
+- `CrewDispatch-0.1.9.pkg` — macOS installer for Apple Silicon and Intel.
 
 GitHub also provides source-code archives automatically. The 0.1.0 manual ZIPs remain available on the historical 0.1.0 release.
 
@@ -26,7 +28,7 @@ GitHub also provides source-code archives automatically. The 0.1.0 manual ZIPs r
 - MCP tools for spawn, status, one-shot result collection, follow-up, cancellation, and settings.
 - Local loopback Dashboard for sessions, logs, approvals, provider settings, follow-up, and cancellation.
 - Managed install, doctor, upgrade, and uninstall with preservation of user data and edited/unowned files.
-- Installer-managed Codex and Claude caller integrations, with ownership-safe complete uninstall.
+- Installer-managed Codex and Claude caller integrations, with ownership-safe upgrade/repair and complete uninstall that preserves edited/foreign entries.
 
 ## Install
 
@@ -37,6 +39,14 @@ Windows adds Start Menu entries for the Dashboard and uninstaller. macOS install
 The Windows installer is currently unsigned, so Microsoft Defender SmartScreen may show **Windows protected your PC** on first launch. If you downloaded it from the official GitHub Release, use **More info → Run anyway** after verifying the published SHA-256 checksum.
 
 The macOS package is unsigned and not notarized; first install may require **Open Anyway** in System Settings → Privacy & Security.
+
+## Uninstall
+
+**Windows:** open **Settings → Apps → Installed apps → CrewDispatch → Uninstall**, or use the Start Menu **Uninstall CrewDispatch** shortcut.
+
+**macOS:** open Finder → **Home → Applications**, then double-click **CrewDispatch Uninstaller.command** (`~/Applications/CrewDispatch Uninstaller.command`). The uninstaller removes CrewDispatch program files, Dashboard login startup, and unmodified Codex/Claude integration. It asks whether to also remove CrewDispatch jobs, logs, settings, and history; choose **No** to keep that data or **Yes** for a complete data purge.
+
+Uninstall never removes Node.js, Command Code, WorkBuddy AI, or provider accounts/credentials. See [Upgrade and uninstall](docs/uninstall.md) for advanced/CLI options.
 
 Advanced users can still use the managed CLI installer from a source/release payload.
 

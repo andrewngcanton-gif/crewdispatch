@@ -6,11 +6,11 @@ Before upgrade or uninstall, finish/cancel active jobs and stop caller MCP/Hub p
 
 Windows: open **Settings → Apps → Installed apps → CrewDispatch → Uninstall**, or use the Start Menu **Uninstall CrewDispatch** shortcut.
 
-macOS: open `~/Applications/CrewDispatch Uninstaller.command`.
+macOS: in Finder open **Home → Applications**, then double-click **CrewDispatch Uninstaller.command**. Its full path is `~/Applications/CrewDispatch Uninstaller.command` (the user's Applications folder, not `/Applications`).
 
 The uninstaller removes managed CrewDispatch program files, Dashboard login autostart, and unmodified CrewDispatch Codex/Claude integration. If a caller file or configuration entry was edited after installation, it is preserved and reported instead of being overwritten or deleted.
 
-Both uninstallers offer an explicit option to also remove all CrewDispatch jobs, logs, settings, and history. This data-removal option only accepts a dedicated `JobQuay`/`CrewDispatch` data-root directory and fails closed on links, protected paths, or arbitrary directory names.
+Both uninstallers offer an explicit option to also remove all CrewDispatch jobs, logs, settings, and history. On macOS the prompt is `Also remove all CrewDispatch jobs, logs, settings and history? [y/N]`: press Return/choose No to preserve data, or choose Yes for a complete data purge. This data-removal option only accepts a dedicated `JobQuay`/`CrewDispatch` data-root directory and fails closed on links, protected paths, or arbitrary directory names.
 
 CrewDispatch never uninstalls Node.js, Command Code, WorkBuddy AI, or provider accounts/credentials.
 
@@ -43,3 +43,5 @@ node dist/cli/install-cli.js upgrade --target <absolute-installed-directory>
 ```
 
 User-edited managed files and unowned files are protected; unsafe collisions fail closed.
+
+Caller integrations follow the same ownership rule during upgrade: a previous CrewDispatch-owned registration whose recorded install target is already gone may be migrated, but unrelated/development/edited Codex or Claude entries are preserved rather than guessed away.
