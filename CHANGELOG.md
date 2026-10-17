@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.9 — 2026-10-17
+
+- Adds compatibility for WorkBuddy AI 5.8.4's changed Desktop helper packaging while keeping the older package layout as a fallback.
+- Preserves macOS provider discovery after login by carrying the install-time provider-search PATH into the user LaunchAgent.
+- Hardens installer/clean-room tests so they use disposable Codex/Claude profiles instead of touching the developer's real caller configuration.
+- Repairs only CrewDispatch-owned stale caller registrations with bounded ownership proof; unrelated/development caller entries remain preserved.
+- Adds worker-death diagnostics for a still-open rare orphan investigation; no root-cause fix is claimed yet.
+
 ## 0.1.8 — 2026-10-16
 
 Settings UI regression patch release.

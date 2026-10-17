@@ -13,9 +13,9 @@ Install and sign in to Command Code and/or WorkBuddy AI using the provider's own
 
 ## 2. Install CrewDispatch
 
-Windows: download and run `CrewDispatch-Setup-0.1.8.exe`. The installer is currently unsigned, so Microsoft Defender SmartScreen may show **Windows protected your PC**. If you downloaded it from the official GitHub Release, verify the published SHA-256 checksum, then use **More info → Run anyway**.
+Windows: download and run `CrewDispatch-Setup-0.1.9.exe`. The installer is currently unsigned, so Microsoft Defender SmartScreen may show **Windows protected your PC**. If you downloaded it from the official GitHub Release, verify the published SHA-256 checksum, then use **More info → Run anyway**.
 
-macOS: download and open `CrewDispatch-0.1.8.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
+macOS: download and open `CrewDispatch-0.1.9.pkg`. The package contains both Apple Silicon and Intel payloads and selects the current architecture automatically.
 
 The macOS package is unsigned/not notarized. If macOS blocks it, use **Open Anyway** in System Settings → Privacy & Security.
 
@@ -23,11 +23,15 @@ Both installers use the same managed CrewDispatch install/doctor/uninstall logic
 
 The installer also configures supported callers automatically. Fully restart Codex/ChatGPT Desktop to use `/prompts:crewdispatch`; start a new Claude session to use `/crewdispatch`. Codex carries the CrewDispatch MCP + skill through its local plugin, while Claude receives MCP + hooks + skill + command.
 
+Caller configuration is ownership-safe: upgrades/uninstall preserve edited or foreign Codex/Claude entries. If a caller integration does not appear after upgrade, use the installed `doctor`/caller repair commands before editing configuration by hand.
+
 ## 3. Verify the installation
 
 After installation, open the Dashboard launcher. Advanced users can run the target-local `doctor` command directly.
 
 Doctor checks the installed payload, Node requirement, packaged plugin/MCP entry, wrappers, runtime dependencies, local MCP/Hub smoke probes, notices/license, and Dashboard autostart state without sending a paid/provider model prompt. The platform installer lifecycle separately verifies the user-level Codex/Claude caller files and registrations.
+
+On macOS, Dashboard login startup runs through a user LaunchAgent with a managed provider-search PATH so provider CLIs installed in normal Homebrew/npm locations remain discoverable without an interactive shell.
 
 ## 4. Open the Dashboard
 
@@ -36,3 +40,10 @@ Use the **CrewDispatch Dashboard** launcher installed for your platform. The Das
 ## 5. Configure a caller
 
 See [Codex and Claude callers](callers.md). The normal installer configures supported callers automatically; CrewDispatch's persisted jobs and Dashboard remain independent of any one caller.
+
+## 6. Uninstall later
+
+- **Windows:** Settings → Apps → Installed apps → CrewDispatch → Uninstall, or Start Menu → **Uninstall CrewDispatch**.
+- **macOS:** Finder → Home → Applications → **CrewDispatch Uninstaller.command**.
+
+The macOS uninstaller asks whether to also remove jobs, logs, settings, and history. Choosing No preserves that data. Neither platform removes Node.js, Command Code, WorkBuddy AI, or provider accounts. See [Upgrade and uninstall](uninstall.md).
