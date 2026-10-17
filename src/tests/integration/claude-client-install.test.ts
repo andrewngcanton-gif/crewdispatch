@@ -215,9 +215,14 @@ test("install repairs only absent CrewDispatch disposable-test registrations and
     const settings = readJson(settingsFile(sb));
     assert.deepEqual(settings.permissions, { allow: ["Bash(git status)"] });
     const serialized = JSON.stringify(settings);
-    assert.equal(serialized.includes(staleRoot), false, "all absent known disposable-test hook paths are removed");
+    const hookGroups = Object.values((settings.hooks ?? {}) as Record<string, Array<Record<string, unknown>>>);
+    const hookCommands = hookGroups.flatMap((groups) => groups.flatMap((group) => {
+      const entries = Array.isArray(group.hooks) ? group.hooks : [];
+      return entries.map((entry) => String((entry as Record<string, unknown>).command ?? ""));
+    }));
+    assert.equal(hookCommands.some((command) => command.includes(staleRoot)), false, "all absent known disposable-test hook paths are removed");
     assert.equal(serialized.includes("echo unrelated-start"), true, "unrelated user hooks are preserved");
-    assert.equal(serialized.includes(HOOK_ENTRY), true, "the stable managed hook is installed");
+    assert.equal(hookCommands.some((command) => command.includes(HOOK_ENTRY)), true, "the stable managed hook is installed");
   } finally {
     sb.cleanup();
   }

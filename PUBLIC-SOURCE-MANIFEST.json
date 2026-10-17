@@ -1,6 +1,6 @@
 {
   "schema": "crewdispatch-public-source-v1",
-  "sourceCommit": "27bf6d04b760b0f7583955038385cb90b58b096f",
+  "sourceCommit": "dcc1c443211c1e0e35ef34a05c0ad977b549c9af",
   "sourceDirty": false,
   "files": [
     {
@@ -13,7 +13,7 @@
     },
     {
       "path": ".github/workflows/installer-ci.yml",
-      "sha256": "0e11e4ba041e8756da9f669a1c7e75809510e7917fe8783a7dd6728ea69399b8"
+      "sha256": "f93abb89a45b03523eb027473b4305d00ebf4342934a1fabfe8de98790a05b04"
     },
     {
       "path": ".gitignore",
@@ -685,7 +685,7 @@
     },
     {
       "path": "src/tests/integration/claude-client-install.test.ts",
-      "sha256": "8a9fb69972eb9a14943c0fc963aebaea7812af3eb0877be61d2a1ce45bf6b99f"
+      "sha256": "0f06561dd087d7d56d10de058565e4b540d73d1f77790207cd18b10943855432"
     },
     {
       "path": "src/tests/integration/claude-lifecycle-real.test.ts",
@@ -793,7 +793,7 @@
     },
     {
       "path": "src/tests/integration/install-autostart.test.ts",
-      "sha256": "b7077189ca80fbad27698a2106b18b3c63d6c30613f13c7234232b83b6e04d62"
+      "sha256": "8f3b5bbdd2c75e4e178233be820c2d155b611465aaf9311b929229cbe9e1d1eb"
     },
     {
       "path": "src/tests/integration/install-cli.test.ts",
@@ -897,7 +897,7 @@
     },
     {
       "path": "src/tests/unit/autostart.test.ts",
-      "sha256": "6901bc0b6773afaefd275ecda1d3faf751d2d2d3d1c7d145e27d0ce1cfd299e2"
+      "sha256": "eaae6f00a1d989582291e3f6498fd3e63f36f1dccbfce00242311f51050c499d"
     },
     {
       "path": "src/tests/unit/capability.test.ts",
@@ -1133,7 +1133,7 @@
     },
     {
       "path": "src/tests/unit/workbuddy-desktop-bridge.test.ts",
-      "sha256": "0dbb73378735c9729d51d642a12668b8d0eafa0adb0d10a7f359a5ac44d3075a"
+      "sha256": "51a09a8887fa7c3ea876c5086b10c597daca5bdd770d0e250600865a3514df53"
     },
     {
       "path": "src/tests/unit/workbuddy-model-effort.test.ts",

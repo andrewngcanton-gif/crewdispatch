@@ -210,12 +210,12 @@ test("post-reopen helper detaches only the exact WorkBuddy sidecar stdio", () =>
 test("post-reopen recovery prefers WorkBuddy 5.8 packaged modules and keeps the legacy 5.7 fallbacks", () => {
   const asar = "/Applications/WorkBuddy AI.app/Contents/Resources/app.asar";
   assert.deepEqual(workBuddyCryptoModulePaths(asar), [
-    `${asar}/main/app-lifetime-job.js`,
-    `${asar}/main/process-cpu-sampler.js`
+    path.join(asar, "main", "app-lifetime-job.js"),
+    path.join(asar, "main", "process-cpu-sampler.js")
   ]);
   assert.deepEqual(workBuddySidecarManagerModulePaths(asar), [
-    `${asar}/main/sidecar-manager.js`,
-    `${asar}/main/code-cache.js`
+    path.join(asar, "main", "sidecar-manager.js"),
+    path.join(asar, "main", "code-cache.js")
   ]);
 
   function createWorkbuddySidecarManagerNew(): Record<string, unknown> { return { source: "sidecar-manager" }; }

@@ -286,7 +286,7 @@ test("macOS LaunchAgent registration, inspection and scoped removal are exact an
     assert.match(plist, /<string>com\.crewdispatch\.dashboard<\/string>/);
     assert.match(plist, /<key>RunAtLoad<\/key>\s*<true\/>/);
     assert.match(plist, /<key>KeepAlive<\/key>\s*<false\/>/);
-    assert.match(plist, new RegExp(`<key>PATH<\\/key>\\s*<string>${launchPath.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}<\\/string>`));
+    assert.equal(plist.includes(`<key>PATH</key>\n    <string>${launchPath}</string>`), true, "the LaunchAgent preserves the exact provider-search PATH on every host OS");
     assert.match(plist, new RegExp(process.execPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(plist, /jobquay-cli\.js/);
     assert.doesNotMatch(plist, /\/bin\/(?:ba)?sh|open -g|osascript/i);
