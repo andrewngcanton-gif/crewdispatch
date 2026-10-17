@@ -10,14 +10,27 @@ import {
   readAcpRpcErrorEvidence,
   ensureWorkBuddyDesktopSidecarReady,
   hostRuntimeId,
+  recordWorkBuddyRecoveryOwner,
   workBuddyDesktopAppCommandPresent,
   workBuddyDesktopMainPid,
   workBuddyDesktopMacRuntimeEnv,
   workBuddyDesktopSidecarEntryPath,
   workBuddyDesktopSidecarSpawnEnv,
+  workBuddyRecoveryOwnerPid,
+  workBuddyRecoveryOwnerReceiptPath,
   waitForDarwinTerminalAck
 } from "../../providers/workbuddy-ai/desktop-bridge";
-import { workBuddyCliEnvBuilder, workBuddyOwnerIdentityMatches, workBuddyRecoverySidecarSpawnOptions } from "../../providers/workbuddy-ai/desktop-runtime-helper";
+import {
+  findWorkBuddyCliEnvBuilder,
+  findWorkBuddySidecarManagerFactory,
+  initializeWorkBuddyCryptoModule,
+  resolveWorkBuddyAtRestCryptoApi,
+  workBuddyCliEnvBuilder,
+  workBuddyCryptoModulePaths,
+  workBuddyOwnerIdentityMatches,
+  workBuddyRecoverySidecarSpawnOptions,
+  workBuddySidecarManagerModulePaths
+} from "../../providers/workbuddy-ai/desktop-runtime-helper";
 import {
   ACP_FAILURE_CANCELLED,
   ACP_FAILURE_MODEL_ERROR,
@@ -84,6 +97,7 @@ test("macOS Desktop runtime env keeps shell essentials but never forwards unrela
   assert.equal(env.CODEBUDDY_CONFIG_DIR, "/Users/Test/.workbuddy-ai");
   assert.equal(env.WORKBUDDY_CONFIG_DIR, "/Users/Test/.workbuddy-ai");
   assert.equal(env.CODEBUDDY_FORCE_HEADLESS_BUNDLE, "1");
+  assert.equal(env.CODEBUDDY_FORCE_LITE_WB_BUNDLE, "1");
   assert.equal(env.ELECTRON_RUN_AS_NODE, "1");
   assert.equal(env.OPENAI_API_KEY, undefined);
   assert.equal(env.JOBQUAY_DAEMON_BEARER, undefined);
@@ -157,6 +171,28 @@ test("macOS owner identity helper matches only the exact current process incarna
   assert.equal(workBuddyOwnerIdentityMatches(process.pid, current.createdAtUs + 1), false);
 });
 
+test("macOS recovery-owner receipt accepts only the exact helper incarnation for the current sidecar", { skip: process.platform !== "darwin" }, () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "jobquay-wb-recovery-owner-"));
+  try {
+    const current = require("../../runtime/process").captureProcessIdentity(process.pid);
+    assert.ok(current?.createdAtUs);
+    recordWorkBuddyRecoveryOwner(root, process.pid, current.createdAtUs, 424242);
+    assert.equal(workBuddyRecoveryOwnerPid(root, 424242), process.pid);
+    assert.equal(workBuddyRecoveryOwnerPid(root, 424243), null, "a different current sidecar never reuses the old owner receipt");
+
+    const file = workBuddyRecoveryOwnerReceiptPath(root);
+    fs.writeFileSync(file, JSON.stringify({
+      version: 1,
+      helperPid: process.pid,
+      helperCreatedAtUs: current.createdAtUs + 1,
+      sidecarPid: 424242
+    }));
+    assert.equal(workBuddyRecoveryOwnerPid(root, 424242), null, "PID reuse / birth mismatch is never ignored");
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test("post-reopen helper detaches only the exact WorkBuddy sidecar stdio", () => {
   const entry = "/Applications/WorkBuddy AI.app/Contents/Resources/app.asar/main/sidecar-entry.js";
   const original = { detached: true, stdio: ["ignore", "ignore", "pipe"] };
@@ -169,6 +205,100 @@ test("post-reopen helper detaches only the exact WorkBuddy sidecar stdio", () =>
     original,
     "unrelated spawns keep their original stdio contract"
   );
+});
+
+test("post-reopen recovery prefers WorkBuddy 5.8 packaged modules and keeps the legacy 5.7 fallbacks", () => {
+  const asar = "/Applications/WorkBuddy AI.app/Contents/Resources/app.asar";
+  assert.deepEqual(workBuddyCryptoModulePaths(asar), [
+    path.join(asar, "main", "app-lifetime-job.js"),
+    path.join(asar, "main", "process-cpu-sampler.js")
+  ]);
+  assert.deepEqual(workBuddySidecarManagerModulePaths(asar), [
+    path.join(asar, "main", "sidecar-manager.js"),
+    path.join(asar, "main", "code-cache.js")
+  ]);
+
+  function createWorkbuddySidecarManagerNew(): Record<string, unknown> { return { source: "sidecar-manager" }; }
+  Object.defineProperty(createWorkbuddySidecarManagerNew, "name", { value: "createWorkbuddySidecarManager" });
+  function createWorkbuddySidecarManagerLegacy(): Record<string, unknown> { return { source: "code-cache" }; }
+  Object.defineProperty(createWorkbuddySidecarManagerLegacy, "name", { value: "createWorkbuddySidecarManager" });
+  function buildWorkbuddyCliEnv(): NodeJS.ProcessEnv { return { WORKBUDDY_TEST_ENV: "ok" }; }
+
+  assert.equal(findWorkBuddySidecarManagerFactory({ i: createWorkbuddySidecarManagerNew }), createWorkbuddySidecarManagerNew);
+  assert.equal(findWorkBuddySidecarManagerFactory({ l: createWorkbuddySidecarManagerLegacy }), createWorkbuddySidecarManagerLegacy);
+  assert.equal(findWorkBuddySidecarManagerFactory({ l: function readAppConfigFileValue() {} }), null);
+  assert.equal(findWorkBuddyCliEnvBuilder({ r: buildWorkbuddyCliEnv }), buildWorkbuddyCliEnv);
+  assert.equal(findWorkBuddyCliEnvBuilder({ r: function otherFunction() {} }), null);
+
+  function normalizeAtRestBuildKeyCapabilities() {}
+  function keyblobPathFor() {}
+  function loadOrCreateKeyblobMasterKey() {}
+  function encodeAtRestEncryptionBootstrap() {}
+  function disposeAtRestEncryptionBootstrap() {}
+  const currentCrypto = resolveWorkBuddyAtRestCryptoApi({
+    G: normalizeAtRestBuildKeyCapabilities,
+    k: keyblobPathFor,
+    A: loadOrCreateKeyblobMasterKey,
+    T: encodeAtRestEncryptionBootstrap,
+    w: disposeAtRestEncryptionBootstrap
+  });
+  assert.equal(currentCrypto.normalize, normalizeAtRestBuildKeyCapabilities);
+  assert.equal(currentCrypto.keyblobPathFor, keyblobPathFor);
+  assert.equal(currentCrypto.loadMaster, loadOrCreateKeyblobMasterKey);
+  assert.equal(currentCrypto.encode, encodeAtRestEncryptionBootstrap);
+  assert.equal(currentCrypto.dispose, disposeAtRestEncryptionBootstrap);
+
+  function Ge() {}
+  function It() {}
+  function Ut() {}
+  function Zt() {}
+  function tn() {}
+  const legacyCrypto = resolveWorkBuddyAtRestCryptoApi({ _t: Ge, tt: It, nt: Ut, Z: Zt, X: tn });
+  assert.equal(legacyCrypto.normalize, Ge);
+  assert.equal(legacyCrypto.keyblobPathFor, It);
+  assert.equal(legacyCrypto.loadMaster, Ut);
+  assert.equal(legacyCrypto.encode, Zt);
+  assert.equal(legacyCrypto.dispose, tn);
+});
+
+test("WorkBuddy 5.8 crypto module initializes its proven lazy chunk and never invokes unrelated dollar export", () => {
+  let currentCalls = 0;
+  const currentInit = () => { currentCalls += 1; };
+  Object.defineProperty(currentInit, "name", { value: "" });
+  function normalizeAtRestBuildKeyCapabilities() {}
+  function keyblobPathFor() {}
+  function loadOrCreateKeyblobMasterKey() {}
+  function encodeAtRestEncryptionBootstrap() {}
+  function disposeAtRestEncryptionBootstrap() {}
+  let wrongCalls = 0;
+  function wrapChildProcess() { wrongCalls += 1; }
+  initializeWorkBuddyCryptoModule({
+    D: currentInit,
+    G: normalizeAtRestBuildKeyCapabilities,
+    k: keyblobPathFor,
+    A: loadOrCreateKeyblobMasterKey,
+    T: encodeAtRestEncryptionBootstrap,
+    w: disposeAtRestEncryptionBootstrap,
+    $: wrapChildProcess
+  });
+  assert.equal(currentCalls, 1, "5.8 app-lifetime-job lazy initializer runs after its exact API family is proven");
+  assert.equal(wrongCalls, 0, "5.8 app-lifetime-job.$ is wrapChildProcess, not init_dist");
+
+  let unprovenCalls = 0;
+  const unprovenD = () => { unprovenCalls += 1; };
+  Object.defineProperty(unprovenD, "name", { value: "" });
+  initializeWorkBuddyCryptoModule({ D: unprovenD, $: wrapChildProcess });
+  assert.equal(unprovenCalls, 0, "an anonymous D export alone is never treated as the crypto initializer");
+  assert.equal(wrongCalls, 0);
+
+  let legacyCalls = 0;
+  const legacyInit = Object.defineProperty(() => { legacyCalls += 1; }, "name", { value: "init_dist" });
+  initializeWorkBuddyCryptoModule({ $: legacyInit });
+  assert.equal(legacyCalls, 1, "the historical packaged $ initializer remains supported when its identity is proven");
+
+  let directCalls = 0;
+  initializeWorkBuddyCryptoModule({ init_dist: () => { directCalls += 1; } });
+  assert.equal(directCalls, 1);
 });
 
 

@@ -152,6 +152,28 @@ function cleanupClaudeCaller(): Record<string, unknown> {
   }
 }
 
+function requireTestCallerIsolation(env: NodeJS.ProcessEnv = process.env): void {
+  const usesInstallerTestSeam = [
+    "JOBQUAY_TEST_AUTOSTART_REGISTRY",
+    "JOBQUAY_TEST_LAUNCHAGENT_DIR",
+    "JOBQUAY_TEST_LAUNCHCTL_STATE"
+  ].some((name) => typeof env[name] === "string" && env[name]!.trim() !== "");
+  if (!usesInstallerTestSeam) return;
+
+  const missing: string[] = [];
+  const codexHome = env.CODEX_HOME?.trim() || "";
+  const claudeConfig = env.CLAUDE_CONFIG_DIR?.trim() || "";
+  if (!codexHome || !path.isAbsolute(codexHome)) missing.push("CODEX_HOME");
+  if (!claudeConfig || !path.isAbsolute(claudeConfig)) missing.push("CLAUDE_CONFIG_DIR");
+  if (missing.length > 0) {
+    throw new InstallError(
+      "test_caller_isolation_required",
+      "Installer test seams are active, so Codex and Claude caller configuration must be redirected explicitly before install/upgrade can run.",
+      { missing }
+    );
+  }
+}
+
 async function main(): Promise<number> {
   let parsed: ParsedArgs;
   try {
@@ -208,6 +230,11 @@ async function main(): Promise<number> {
 
   try {
     if (parsed.command === "install" || parsed.command === "upgrade") {
+      // Test-only autostart seams must never be allowed to coexist with the
+      // operator's real caller profiles. This guard runs BEFORE the core target
+      // is created/replaced so a forgotten test isolation variable fails closed
+      // without mutating either the install target or ~/.codex / ~/.claude.
+      requireTestCallerIsolation(process.env);
       const core = parsed.command === "install" ? install(parsed.target) : upgrade(parsed.target);
       const codex = installCodexClient(parsed.target);
       let claude: Record<string, unknown>;

@@ -161,7 +161,7 @@ async function cmdStart(args: ParsedArgs): Promise<number> {
       await recoverTerminalHolders(root, {
         by: "cli-admission",
         includeJob: workspaceJobFilter(cwd),
-        ignoredPidsFor: (job) => providerManagedIgnoredPids(job),
+        ignoredPidsFor: (job) => providerManagedIgnoredPids(job, process.env, root),
         readBootTimeFn: readBootTime
       });
     } catch {
@@ -204,6 +204,70 @@ async function cmdStart(args: ParsedArgs): Promise<number> {
   }
 }
 
+function workerDeathDetail(value: unknown): string {
+  if (value instanceof Error) return String(value.stack || value.message || value.name).slice(0, 4000);
+  try {
+    return JSON.stringify(value).slice(0, 4000);
+  } catch {
+    return String(value).slice(0, 4000);
+  }
+}
+
+/**
+ * Minimal worker-death diagnostics. The detached worker's stderr is already
+ * redirected to <job>.worker.log, so keep the breadcrumb on that existing
+ * channel instead of adding another persistence format.
+ *
+ * Signal handlers re-raise the SAME signal after the synchronous write, so they
+ * do not turn SIGTERM/SIGINT/SIGHUP into a graceful application exit. SIGKILL
+ * cannot be observed by a process; a sudden worker disappearance with no
+ * breadcrumb therefore remains useful evidence of a hard/unobservable kill.
+ */
+function installWorkerDeathBreadcrumbs(jobId: string): void {
+  const write = (event: string, detail: string | null = null): void => {
+    const record = {
+      type: "crewdispatch_worker_death",
+      at: new Date().toISOString(),
+      pid: process.pid,
+      ppid: process.ppid,
+      jobId,
+      event,
+      detail
+    };
+    try {
+      fs.writeSync(2, `[crewdispatch-worker-death] ${JSON.stringify(record)}\n`);
+    } catch {
+      // Diagnostics must never interfere with the worker's real failure path.
+    }
+  };
+
+  for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"] as const) {
+    const handler = (): void => {
+      write("signal", signal);
+      process.removeListener(signal, handler);
+      try {
+        process.kill(process.pid, signal);
+      } catch {
+        process.exitCode = 128;
+      }
+    };
+    process.once(signal, handler);
+  }
+
+  process.on("uncaughtExceptionMonitor", (error, origin) => {
+    write(`uncaughtException:${origin}`, workerDeathDetail(error));
+  });
+
+  const rejectionHandler = (reason: unknown): void => {
+    write("unhandledRejection", workerDeathDetail(reason));
+    process.removeListener("unhandledRejection", rejectionHandler);
+    queueMicrotask(() => {
+      throw reason instanceof Error ? reason : new Error(workerDeathDetail(reason));
+    });
+  };
+  process.on("unhandledRejection", rejectionHandler);
+}
+
 async function cmdWorker(args: ParsedArgs): Promise<number> {
   const root = get(args, "--root");
   const jobId = get(args, "--job");
@@ -211,6 +275,7 @@ async function cmdWorker(args: ParsedArgs): Promise<number> {
     print({ ok: false, error: "--root and --job are required" });
     return 1;
   }
+  installWorkerDeathBreadcrumbs(jobId);
   const fixture = get(args, "--fixture");
   // A fixture substitutes the provider PROCESS only: for a WorkBuddy job it is
   // driven through the REAL WorkBuddy adapter (approval records, terminal

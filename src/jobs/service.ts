@@ -1707,7 +1707,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
       by: "worker",
       now,
       enumerateFn,
-      ignoredPids: providerManagedIgnoredPids(job, env),
+      ignoredPids: providerManagedIgnoredPids(job, env, root),
       platform
     })
       .then(() => undefined)
@@ -1809,7 +1809,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
       by: "worker",
       now,
       enumerateFn,
-      ignoredPids: providerManagedIgnoredPids(job, env),
+      ignoredPids: providerManagedIgnoredPids(job, env, root),
       platform
     });
     if (!tree.stopped) {
@@ -2165,7 +2165,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
       by: "boundary",
       now,
       enumerateFn,
-      ignoredPids: providerManagedIgnoredPids(job, env),
+      ignoredPids: providerManagedIgnoredPids(job, env, root),
       platform
     })
       .then(() => undefined)
@@ -2205,7 +2205,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
           by: "worker",
           now,
           enumerateFn,
-          ignoredPids: providerManagedIgnoredPids(job, env),
+          ignoredPids: providerManagedIgnoredPids(job, env, root),
           platform
         });
         if (!tree.stopped) {
@@ -2458,7 +2458,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
             childStartedAtMs: attemptStartedAtMs(job, generation),
             childStartedAtUs: job.childStartedAtUs,
             enumerateFn,
-            ignoredPids: providerManagedIgnoredPids(job, env)
+            ignoredPids: providerManagedIgnoredPids(job, env, root)
           }).finally(() => {
             // Write the ACK while the exact provider group is still stopped, then
             // resume it. The bridge can only continue teardown after the bounded
@@ -2584,7 +2584,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
           by: "worker",
           now,
           enumerateFn,
-          ignoredPids: providerManagedIgnoredPids(job, env),
+          ignoredPids: providerManagedIgnoredPids(job, env, root),
           platform
         });
         // PROVIDER-OWNED TURN (JQ-20261006-58): the managed tree is only half the
@@ -2683,7 +2683,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
         by: "worker",
         now,
         enumerateFn,
-        ignoredPids: providerManagedIgnoredPids(job, env),
+        ignoredPids: providerManagedIgnoredPids(job, env, root),
         platform,
         darwinPreCloseContainment: terminalContainmentResult
       });
@@ -3211,7 +3211,7 @@ export async function requestCancel(root: string, jobId: string, opts: CancelOpt
     by,
     now: nowFn,
     enumerateFn: opts.enumerateFn,
-    ignoredPids: providerManagedIgnoredPids(job, env)
+    ignoredPids: providerManagedIgnoredPids(job, env, resolved)
   });
   const kill = managedKill.kill;
 
@@ -3251,7 +3251,7 @@ export async function requestCancel(root: string, jobId: string, opts: CancelOpt
       now: nowFn,
       enumerateFn: opts.enumerateFn,
       killSurvivors: true,
-      ignoredPids: providerManagedIgnoredPids(job, env)
+      ignoredPids: providerManagedIgnoredPids(job, env, resolved)
     });
     // RESOLVE the provider-owned cleanup BEFORE claiming `cancelled`: the exact
     // turn cancellation was only a REQUEST, and a provider-owned tool that is
@@ -3494,7 +3494,7 @@ export async function prepareContinuation(input: ContinuationInput): Promise<Con
       by: "resume",
       now: nowFn,
       enumerateFn: input.enumerateFn,
-      ignoredPids: providerManagedIgnoredPids(job, input.env ?? process.env)
+      ignoredPids: providerManagedIgnoredPids(job, input.env ?? process.env, resolved)
     });
     if (!tree.stopped) {
       return {

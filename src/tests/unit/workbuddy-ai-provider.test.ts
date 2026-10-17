@@ -32,6 +32,7 @@ test("WorkBuddy AI profile selector is isolated and case-insensitive", () => {
   assert.equal(env.CODEBUDDY_CONFIG_DIR, expectedConfigDir);
   assert.equal(env.WORKBUDDY_CONFIG_DIR, expectedConfigDir);
   assert.equal(env.CODEBUDDY_FORCE_HEADLESS_BUNDLE, "1");
+  assert.equal(env.CODEBUDDY_FORCE_LITE_WB_BUNDLE, "1", "new lite-wb bundles are preferred when the launcher supports them");
   assert.equal(base.CodeBuddy_Config_Dir, "C:\\wrong", "parent env must not be mutated");
 });
 

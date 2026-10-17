@@ -56,7 +56,7 @@ function sha256(file: string): string {
 test("the packaged runtime carries the Claude assets and installs/wakes from its own layout", { timeout: 900000 }, async () => {
   if (ACCEPT_SOURCE_ROOT) {
     const pkg = JSON.parse(fs.readFileSync(path.join(SOURCE_ROOT, "package.json"), "utf8")) as Record<string, unknown>;
-    assert.equal(pkg.version, "0.1.8", "exact-artifact Claude acceptance requires the 0.1.8 candidate");
+    assert.equal(pkg.version, "0.1.9", "exact-artifact Claude acceptance requires the 0.1.9 candidate");
     assert.equal(pkg.license, "Apache-2.0");
   }
   const tempRoot = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "jobquay-claude-packaged-"));
@@ -64,11 +64,19 @@ test("the packaged runtime carries the Claude assets and installs/wakes from its
   const configDir = path.join(tempRoot, "claude-config");
   const dataRoot = path.join(tempRoot, "data");
   const foreignCwd = path.join(tempRoot, "foreign-cwd");
+  const callerHome = path.join(tempRoot, "caller-home");
+  const codexHome = path.join(callerHome, ".codex");
+  const autoClaudeConfig = path.join(callerHome, ".claude-auto");
   fs.mkdirSync(configDir, { recursive: true });
   fs.mkdirSync(dataRoot, { recursive: true });
   fs.mkdirSync(foreignCwd, { recursive: true });
+  fs.mkdirSync(callerHome, { recursive: true });
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    HOME: callerHome,
+    USERPROFILE: callerHome,
+    CODEX_HOME: codexHome,
+    CLAUDE_CONFIG_DIR: autoClaudeConfig,
     JOBQUAY_DATA_ROOT: dataRoot,
     JOBQUAY_TEST_AUTOSTART_REGISTRY: path.join(tempRoot, "autostart.json"),
     JOBQUAY_TEST_LAUNCHAGENT_DIR: path.join(tempRoot, "LaunchAgents"),
@@ -84,6 +92,8 @@ test("the packaged runtime carries the Claude assets and installs/wakes from its
     const installed = run(SOURCE_INSTALLER, ["install", "--target", runtime], foreignCwd, env);
     assert.equal(installed.status, 0, installed.stderr || installed.stdout);
     assert.equal((JSON.parse(installed.stdout) as Record<string, unknown>).ok, true);
+    assert.equal(fs.existsSync(path.join(codexHome, "crewdispatch-install.json")), true, "the core install redirects Codex caller state into the disposable profile");
+    assert.equal(fs.existsSync(path.join(autoClaudeConfig, "crewdispatch-install.json")), true, "the core install redirects Claude caller state into the disposable profile");
 
     // The Claude command asset travels with the payload, byte-identical.
     const packagedCommand = path.join(runtime, "integrations", "claude", "commands", "crewdispatch.md");

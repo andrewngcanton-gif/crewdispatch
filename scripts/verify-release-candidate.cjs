@@ -167,6 +167,8 @@ function cleanEnv(root, dataRoot, cliShim) {
   for (const dir of [home, local, roaming, temp, dataRoot]) fs.mkdirSync(dir, { recursive: true });
   env.HOME = home;
   env.USERPROFILE = home;
+  env.CODEX_HOME = path.join(home, ".codex");
+  env.CLAUDE_CONFIG_DIR = path.join(home, ".claude");
   env.LOCALAPPDATA = local;
   env.APPDATA = roaming;
   env.TEMP = temp;

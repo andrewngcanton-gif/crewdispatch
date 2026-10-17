@@ -651,13 +651,49 @@ test("real install CLI installs an independent package, diagnoses both servers, 
   }
 });
 
+test("installer test seams fail closed unless caller profiles are explicitly isolated", { timeout: 900000 }, () => {
+  const workspace = fs.mkdtempSync(path.join(canonicalTempRoot(), "jobquay-caller-isolation-guard-"));
+  const target = path.join(workspace, "installed-jobquay");
+  const dataRoot = path.join(workspace, "data");
+  fs.mkdirSync(dataRoot, { recursive: true });
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    HOME: workspace,
+    USERPROFILE: workspace,
+    JOBQUAY_DATA_ROOT: dataRoot,
+    JOBQUAY_TEST_AUTOSTART_REGISTRY: path.join(workspace, "autostart-registry.json"),
+    JOBQUAY_TEST_LAUNCHAGENT_DIR: path.join(workspace, "LaunchAgents"),
+    JOBQUAY_TEST_LAUNCHCTL_STATE: path.join(workspace, "launchctl-state.json")
+  };
+  delete env.CODEX_HOME;
+  delete env.CLAUDE_CONFIG_DIR;
+  try {
+    const attempt = runInstaller(SOURCE_INSTALLER, ["install", "--target", target], workspace, env);
+    assert.notEqual(attempt.status, 0);
+    const error = attempt.json.error as Record<string, unknown>;
+    assert.equal(error?.code, "test_caller_isolation_required");
+    assert.deepEqual((error?.details as Record<string, unknown>)?.missing, ["CODEX_HOME", "CLAUDE_CONFIG_DIR"]);
+    assert.equal(fs.existsSync(target), false, "the safety guard fires before the install target is created");
+    assert.equal(fs.existsSync(path.join(workspace, ".codex")), false);
+    assert.equal(fs.existsSync(path.join(workspace, ".claude")), false);
+  } finally {
+    fs.rmSync(workspace, { recursive: true, force: true });
+  }
+});
+
 test("a user-modified product LICENSE blocks upgrade and is preserved by uninstall", { timeout: 900000 }, () => {
   const workspace = fs.mkdtempSync(path.join(canonicalTempRoot(), "jobquay-license-preserve-"));
   const target = path.join(workspace, "installed-jobquay");
   const dataRoot = path.join(workspace, "separate-data-root");
   fs.mkdirSync(dataRoot, { recursive: true });
+  const callerHome = path.join(workspace, "caller-home");
+  fs.mkdirSync(callerHome, { recursive: true });
   const installerEnv: NodeJS.ProcessEnv = {
     ...process.env,
+    HOME: callerHome,
+    USERPROFILE: callerHome,
+    CODEX_HOME: path.join(callerHome, ".codex"),
+    CLAUDE_CONFIG_DIR: path.join(callerHome, ".claude"),
     JOBQUAY_DATA_ROOT: dataRoot,
     JOBQUAY_TEST_AUTOSTART_REGISTRY: path.join(workspace, "autostart-registry.json"),
     JOBQUAY_TEST_LAUNCHAGENT_DIR: path.join(workspace, "LaunchAgents"),
@@ -702,8 +738,14 @@ test("a user-modified THIRD_PARTY_NOTICES is preserved and reported by uninstall
   const target = path.join(workspace, "installed-jobquay");
   const dataRoot = path.join(workspace, "separate-data-root");
   fs.mkdirSync(dataRoot, { recursive: true });
+  const callerHome = path.join(workspace, "caller-home");
+  fs.mkdirSync(callerHome, { recursive: true });
   const installerEnv: NodeJS.ProcessEnv = {
     ...process.env,
+    HOME: callerHome,
+    USERPROFILE: callerHome,
+    CODEX_HOME: path.join(callerHome, ".codex"),
+    CLAUDE_CONFIG_DIR: path.join(callerHome, ".claude"),
     JOBQUAY_DATA_ROOT: dataRoot,
     JOBQUAY_TEST_AUTOSTART_REGISTRY: path.join(workspace, "autostart-registry.json"),
     JOBQUAY_TEST_LAUNCHAGENT_DIR: path.join(workspace, "LaunchAgents"),

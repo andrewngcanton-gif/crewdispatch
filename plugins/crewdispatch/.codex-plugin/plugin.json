@@ -1,6 +1,6 @@
 {
   "name": "crewdispatch",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "CrewDispatch: dispatch and manage durable long-running coding-agent jobs over a local stdio MCP server.",
   "author": {
     "name": "CrewDispatch"

@@ -1,6 +1,6 @@
 {
   "name": "crewdispatch",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "private": true,
   "license": "Apache-2.0",
   "description": "CrewDispatch — local orchestration for durable long-running coding-agent jobs with Command Code and WorkBuddy AI adapters.",
@@ -16,6 +16,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "test": "npm run build && node scripts/run-tests.cjs",
     "test:unit": "npm run build && node scripts/run-tests.cjs dist/tests/unit",
+    "test:settings-ui-contract": "npm run build && node scripts/run-settings-ui-contract.cjs",
     "smoke": "npm run build && node dist/cli/probe-cli.js",
     "mcp": "node dist/mcp/server.js",
     "hub": "node dist/hub/server.js",

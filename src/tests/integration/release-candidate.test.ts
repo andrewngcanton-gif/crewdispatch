@@ -112,8 +112,10 @@ test("internal release candidate archive installs, diagnoses, upgrades and unins
   const foreignCwd = path.join(tempRoot, "foreign-cwd");
   const target = path.join(tempRoot, "install");
   const dataRoot = path.join(tempRoot, "data");
+  const callerHome = path.join(tempRoot, "caller-home");
   fs.mkdirSync(foreignCwd, { recursive: true });
   fs.mkdirSync(dataRoot, { recursive: true });
+  fs.mkdirSync(callerHome, { recursive: true });
   const sentinel = path.join(dataRoot, "release-sentinel.txt");
   fs.writeFileSync(sentinel, "keep-me\n", "utf8");
   const sentinelHash = crypto.createHash("sha256").update(fs.readFileSync(sentinel)).digest("hex");
@@ -262,6 +264,10 @@ test("internal release candidate archive installs, diagnoses, upgrades and unins
 
     const env = {
       ...process.env,
+      HOME: callerHome,
+      USERPROFILE: callerHome,
+      CODEX_HOME: path.join(callerHome, ".codex"),
+      CLAUDE_CONFIG_DIR: path.join(callerHome, ".claude"),
       JOBQUAY_DATA_ROOT: dataRoot,
       JOBQUAY_CLI_AUTODISCOVER: "false",
       JOBQUAY_COMMAND_CODE_CLI_PATH: writeCommandCodeShim(path.join(tempRoot, "command-code-shim")),
@@ -334,7 +340,7 @@ test("internal release candidate archive installs, diagnoses, upgrades and unins
     assert.equal(cleanroomJson.gatekeeperChecked, false);
     assert.equal(cleanroomJson.cleanOsAssumed, false);
     assert.equal(cleanroomJson.providerProbeMode, "stubbed-command-code-metadata-only");
-    assert.equal(cleanroomJson.packageVersion, "0.1.8");
+    assert.equal(cleanroomJson.packageVersion, "0.1.9");
     assert.equal((cleanroomJson.archive as Record<string, unknown>).sha256, report.archive.sha256);
     assert.equal(cleanroomJson.doctorStatus, "healthy");
     assert.equal((cleanroomJson.wrapperChecks as unknown[]).length, 2);

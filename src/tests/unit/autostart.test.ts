@@ -259,9 +259,11 @@ test("macOS LaunchAgent registration, inspection and scoped removal are exact an
   const launchAgents = path.join(root, "Library", "LaunchAgents");
   const launchctlState = path.join(root, "launchctl-state.json");
   const dataRoot = path.join(root, "data");
+  const launchPath = `${path.dirname(process.execPath)}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin`;
   const env: NodeJS.ProcessEnv = {
     HOME: root,
     JOBQUAY_DATA_ROOT: dataRoot,
+    PATH: launchPath,
     JOBQUAY_TEST_LAUNCHAGENT_DIR: launchAgents,
     JOBQUAY_TEST_LAUNCHCTL_STATE: launchctlState
   };
@@ -284,6 +286,7 @@ test("macOS LaunchAgent registration, inspection and scoped removal are exact an
     assert.match(plist, /<string>com\.crewdispatch\.dashboard<\/string>/);
     assert.match(plist, /<key>RunAtLoad<\/key>\s*<true\/>/);
     assert.match(plist, /<key>KeepAlive<\/key>\s*<false\/>/);
+    assert.equal(plist.includes(`<key>PATH</key>\n    <string>${launchPath}</string>`), true, "the LaunchAgent preserves the exact provider-search PATH on every host OS");
     assert.match(plist, new RegExp(process.execPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
     assert.match(plist, /jobquay-cli\.js/);
     assert.doesNotMatch(plist, /\/bin\/(?:ba)?sh|open -g|osascript/i);

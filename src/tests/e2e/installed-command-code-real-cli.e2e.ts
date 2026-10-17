@@ -628,8 +628,10 @@ test("the installed MCP entry gives real Command Code YOLO file-write access, re
   const project = path.join(workspace, "workspace");
   const outsideSentinel = path.join(workspace, "outside-target.keep");
   const dataSentinel = path.join(dataRoot, "keep-data.txt");
+  const callerHome = path.join(workspace, "caller-home");
   fs.mkdirSync(foreignCwd, { recursive: true });
   fs.mkdirSync(dataRoot, { recursive: true });
+  fs.mkdirSync(callerHome, { recursive: true });
   fs.mkdirSync(path.join(project, ".commandcode"), { recursive: true });
   fs.writeFileSync(outsideSentinel, "outside the install target\n", "utf8");
   fs.writeFileSync(dataSentinel, "data root survives uninstall\n", "utf8");
@@ -638,6 +640,10 @@ test("the installed MCP entry gives real Command Code YOLO file-write access, re
 
   const installerEnv: NodeJS.ProcessEnv = {
     ...process.env,
+    HOME: callerHome,
+    USERPROFILE: callerHome,
+    CODEX_HOME: path.join(callerHome, ".codex"),
+    CLAUDE_CONFIG_DIR: path.join(callerHome, ".claude"),
     JOBQUAY_DATA_ROOT: dataRoot,
     // Never write a real HKCU login entry from an automated run.
     JOBQUAY_TEST_AUTOSTART_REGISTRY: path.join(workspace, "autostart-registry.json")

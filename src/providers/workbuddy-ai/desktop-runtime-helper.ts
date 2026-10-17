@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { captureProcessIdentity } from "../../runtime/process";
@@ -121,6 +122,12 @@ function dynamicFunction(
 ): (...args: any[]) => any {
   const direct = module[descriptiveName];
   if (typeof direct === "function") return direct;
+  const named = Object.values(module).filter(
+    (candidate): candidate is (...args: any[]) => any =>
+      typeof candidate === "function" && candidate.name === descriptiveName
+  );
+  if (named.length === 1) return named[0]!;
+  if (named.length > 1) throw new Error("WorkBuddy packaged helper API is incompatible: " + descriptiveName);
   const fallback = module[fallbackKey];
   if (
     typeof fallback === "function" &&
@@ -129,7 +136,7 @@ function dynamicFunction(
   throw new Error("WorkBuddy packaged helper API is incompatible: " + descriptiveName);
 }
 
-function descriptiveFunction(module: DynamicModule, descriptiveName: string): (...args: any[]) => any {
+function findDescriptiveFunction(module: DynamicModule, descriptiveName: string): ((...args: any[]) => any) | null {
   const direct = module[descriptiveName];
   if (typeof direct === "function") return direct;
   const matches = Object.values(module).filter(
@@ -137,16 +144,80 @@ function descriptiveFunction(module: DynamicModule, descriptiveName: string): (.
       typeof candidate === "function" && candidate.name === descriptiveName
   );
   if (matches.length === 1) return matches[0]!;
+  if (matches.length > 1) throw new Error("WorkBuddy packaged helper API is incompatible: " + descriptiveName);
+  return null;
+}
+
+function descriptiveFunction(module: DynamicModule, descriptiveName: string): (...args: any[]) => any {
+  const found = findDescriptiveFunction(module, descriptiveName);
+  if (found) return found;
   throw new Error("WorkBuddy packaged helper API is incompatible: " + descriptiveName);
+}
+
+export function findWorkBuddyCliEnvBuilder(module: DynamicModule): ((...args: any[]) => any) | null {
+  return findDescriptiveFunction(module, "buildWorkbuddyCliEnv");
 }
 
 export function workBuddyCliEnvBuilder(codeCache: DynamicModule): (...args: any[]) => any {
   return descriptiveFunction(codeCache, "buildWorkbuddyCliEnv");
 }
 
-function initializeCryptoModule(module: DynamicModule): void {
-  const init = typeof module.init_dist === "function" ? module.init_dist : module.$;
-  if (typeof init === "function") init();
+export function workBuddyCryptoModulePaths(asarPath: string): string[] {
+  return [
+    path.join(asarPath, "main", "app-lifetime-job.js"),
+    path.join(asarPath, "main", "process-cpu-sampler.js")
+  ];
+}
+
+export interface WorkBuddyAtRestCryptoApi {
+  normalize: (...args: any[]) => any;
+  keyblobPathFor: (...args: any[]) => any;
+  loadMaster: (...args: any[]) => any;
+  encode: (...args: any[]) => any;
+  dispose: (...args: any[]) => any;
+}
+
+export function resolveWorkBuddyAtRestCryptoApi(module: DynamicModule): WorkBuddyAtRestCryptoApi {
+  return {
+    normalize: dynamicFunction(module, "normalizeAtRestBuildKeyCapabilities", "_t", "Ge"),
+    keyblobPathFor: dynamicFunction(module, "keyblobPathFor", "tt", "It"),
+    loadMaster: dynamicFunction(module, "loadOrCreateKeyblobMasterKey", "nt", "Ut"),
+    encode: dynamicFunction(module, "encodeAtRestEncryptionBootstrap", "Z", "Zt"),
+    dispose: dynamicFunction(module, "disposeAtRestEncryptionBootstrap", "X", "tn")
+  };
+}
+
+export function initializeWorkBuddyCryptoModule(module: DynamicModule): void {
+  if (typeof module.init_dist === "function") {
+    module.init_dist();
+    return;
+  }
+
+  // WorkBuddy 5.8.4 moved the at-rest helpers into app-lifetime-job.js. That
+  // module exports its rolldown lazy initializer as anonymous `D`, while `$` is
+  // now an unrelated wrapChildProcess helper. Call D only after proving the
+  // exact five named at-rest APIs that initializer owns are present.
+  const current = module.D;
+  const currentApis = [
+    "normalizeAtRestBuildKeyCapabilities",
+    "keyblobPathFor",
+    "loadOrCreateKeyblobMasterKey",
+    "encodeAtRestEncryptionBootstrap",
+    "disposeAtRestEncryptionBootstrap"
+  ];
+  if (
+    typeof current === "function" && current.name === "" && current.length === 0 &&
+    currentApis.every((name) => Object.values(module).some((value) => typeof value === "function" && value.name === name))
+  ) {
+    current();
+    return;
+  }
+
+  const legacy = module.$;
+  if (
+    typeof legacy === "function" &&
+    (legacy.name === "init_dist" || legacy.name === "$" || legacy.name === "")
+  ) legacy();
 }
 
 function credentialBootstrap(cryptoModule: DynamicModule, configDir: string): {
@@ -154,12 +225,8 @@ function credentialBootstrap(cryptoModule: DynamicModule, configDir: string): {
   dispose(): void;
   encode(): JsonObject;
 } {
-  initializeCryptoModule(cryptoModule);
-  const normalize = dynamicFunction(cryptoModule, "normalizeAtRestBuildKeyCapabilities", "_t", "Ge");
-  const keyblobPathFor = dynamicFunction(cryptoModule, "keyblobPathFor", "tt", "It");
-  const loadMaster = dynamicFunction(cryptoModule, "loadOrCreateKeyblobMasterKey", "nt", "Ut");
-  const encode = dynamicFunction(cryptoModule, "encodeAtRestEncryptionBootstrap", "Z", "Zt");
-  const dispose = dynamicFunction(cryptoModule, "disposeAtRestEncryptionBootstrap", "X", "tn");
+  initializeWorkBuddyCryptoModule(cryptoModule);
+  const { normalize, keyblobPathFor, loadMaster, encode, dispose } = resolveWorkBuddyAtRestCryptoApi(cryptoModule);
   const storage = nativeStorage();
   const capabilities = normalize(storage.loggerGet());
   if (capabilities?.symmetric?.status !== "available") {
@@ -186,15 +253,20 @@ function credentialBootstrap(cryptoModule: DynamicModule, configDir: string): {
   };
 }
 
-function sidecarManagerFactory(codeCache: DynamicModule): (opts?: DynamicModule) => DynamicModule {
-  const direct = codeCache.createWorkbuddySidecarManager;
+export function findWorkBuddySidecarManagerFactory(module: DynamicModule): ((opts?: DynamicModule) => DynamicModule) | null {
+  const direct = module.createWorkbuddySidecarManager;
   if (typeof direct === "function") return direct;
-  const current = codeCache.l;
-  if (typeof current === "function" && current.name === "createWorkbuddySidecarManager") return current;
-  for (const candidate of Object.values(codeCache)) {
+  for (const candidate of Object.values(module)) {
     if (typeof candidate === "function" && candidate.name === "createWorkbuddySidecarManager") return candidate;
   }
-  throw new Error("WorkBuddy packaged SidecarManager API is unavailable.");
+  return null;
+}
+
+export function workBuddySidecarManagerModulePaths(asarPath: string): string[] {
+  return [
+    path.join(asarPath, "main", "sidecar-manager.js"),
+    path.join(asarPath, "main", "code-cache.js")
+  ];
 }
 
 export function workBuddyRecoverySidecarSpawnOptions(
@@ -229,8 +301,14 @@ async function main(): Promise<boolean> {
   // WorkBuddy's own packaged modules own credential material and sidecar/runtime
   // environment construction. Sensitive key material stays inside this WorkBuddy
   // Electron process; stdout contains only bounded safe acknowledgements.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const cryptoModule = require(path.join(args.asarPath, "main", "process-cpu-sampler.js")) as DynamicModule;
+  let cryptoModule: DynamicModule | null = null;
+  for (const modulePath of workBuddyCryptoModulePaths(args.asarPath)) {
+    if (!fs.existsSync(modulePath)) continue;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    cryptoModule = require(modulePath) as DynamicModule;
+    break;
+  }
+  if (!cryptoModule) throw new Error("WorkBuddy packaged credential helper module is unavailable.");
   const credentials = credentialBootstrap(cryptoModule, args.configDir);
   let credentialsDisposed = false;
   try {
@@ -252,9 +330,15 @@ async function main(): Promise<boolean> {
       };
       let manager: DynamicModule | null = null;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const codeCache = require(path.join(args.asarPath, "main", "code-cache.js")) as DynamicModule;
-        manager = sidecarManagerFactory(codeCache)({ credentialProtectionBootstrap: credentials.bootstrap });
+        let factory: ((opts?: DynamicModule) => DynamicModule) | null = null;
+        for (const modulePath of workBuddySidecarManagerModulePaths(args.asarPath)) {
+          if (!fs.existsSync(modulePath)) continue;
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          factory = findWorkBuddySidecarManagerFactory(require(modulePath) as DynamicModule);
+          if (factory) break;
+        }
+        if (!factory) throw new Error("WorkBuddy packaged SidecarManager API is unavailable.");
+        manager = factory({ credentialProtectionBootstrap: credentials.bootstrap });
         if (typeof manager?.ensureStarted !== "function") throw new Error("WorkBuddy packaged SidecarManager cannot start.");
         await manager.ensureStarted();
         await new Promise<void>((resolve) => {
@@ -291,11 +375,22 @@ async function main(): Promise<boolean> {
       return false;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const codeCache = require(path.join(args.asarPath, "main", "code-cache.js")) as DynamicModule;
-    codeCache.init_workbuddy_paths?.();
-    codeCache.init_workbuddy_product_config?.();
-    const env = workBuddyCliEnvBuilder(codeCache)(
+    let runtimeModule: DynamicModule | null = null;
+    let envBuilder: ((...args: any[]) => any) | null = null;
+    for (const modulePath of workBuddySidecarManagerModulePaths(args.asarPath)) {
+      if (!fs.existsSync(modulePath)) continue;
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const candidate = require(modulePath) as DynamicModule;
+      envBuilder = findWorkBuddyCliEnvBuilder(candidate);
+      if (envBuilder) {
+        runtimeModule = candidate;
+        break;
+      }
+    }
+    if (!runtimeModule || !envBuilder) throw new Error("WorkBuddy packaged CLI environment builder is unavailable.");
+    runtimeModule.init_workbuddy_paths?.();
+    runtimeModule.init_workbuddy_product_config?.();
+    const env = envBuilder(
       { ELECTRON_RUN_AS_NODE: "1" },
       undefined,
       { hostId: "workbuddy-desktop" }

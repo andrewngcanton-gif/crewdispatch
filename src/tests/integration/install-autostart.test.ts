@@ -163,12 +163,18 @@ test("the registered Windows autostart cold-starts one hidden Hub, refuses a for
   const foreignCwd = path.join(workspace, "unrelated-cwd");
   const dataRoot = path.join(workspace, "data-root");
   const registryFile = path.join(workspace, "autostart-registry.json");
+  const callerHome = path.join(workspace, "caller-home");
   const dataSentinel = path.join(dataRoot, "keep-data.txt");
   fs.mkdirSync(foreignCwd, { recursive: true });
   fs.mkdirSync(dataRoot, { recursive: true });
+  fs.mkdirSync(callerHome, { recursive: true });
   fs.writeFileSync(dataSentinel, "user data must survive install/upgrade/uninstall\n", "utf8");
   const env: NodeJS.ProcessEnv = {
     ...process.env,
+    HOME: callerHome,
+    USERPROFILE: callerHome,
+    CODEX_HOME: path.join(callerHome, ".codex"),
+    CLAUDE_CONFIG_DIR: path.join(callerHome, ".claude"),
     JOBQUAY_DATA_ROOT: dataRoot,
     JOBQUAY_TEST_AUTOSTART_REGISTRY: registryFile
   };

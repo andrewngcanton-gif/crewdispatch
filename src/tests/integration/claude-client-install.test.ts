@@ -178,6 +178,72 @@ test("an isolated install writes only the managed entries/files and preserves ev
   }
 });
 
+test("install repairs only absent CrewDispatch disposable-test registrations and preserves unrelated Claude config", () => {
+  const sb = sandbox("stale-test-registration");
+  const staleRoot = fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()), "jobquay-claude-packaged-"));
+  const staleServer = path.join(staleRoot, "runtime", "dist", "mcp", "server.js");
+  const staleHook = path.join(staleRoot, "runtime", "dist", "claude", "hook.js");
+  fs.rmSync(staleRoot, { recursive: true, force: true });
+  try {
+    fs.mkdirSync(sb.configDir, { recursive: true });
+    fs.writeFileSync(userConfigFile(sb), `${JSON.stringify({
+      mcpServers: {
+        "other-server": { command: "other", args: ["--x"] },
+        crewdispatch: { command: USER_NODE, args: [staleServer] }
+      },
+      theme: "dark"
+    }, null, 2)}\n`);
+    const staleStart = { hooks: [{ type: "command", command: `"${USER_NODE}" "${staleHook}" session-start`, timeout: 30 }] };
+    const staleEnd = { hooks: [{ type: "command", command: `"${USER_NODE}" "${staleHook}" session-end`, timeout: 10 }] };
+    const unrelatedStart = { matcher: "Bash", hooks: [{ type: "command", command: "echo unrelated-start" }] };
+    fs.writeFileSync(settingsFile(sb), `${JSON.stringify({
+      permissions: { allow: ["Bash(git status)"] },
+      hooks: { SessionStart: [staleStart, unrelatedStart], SessionEnd: [staleEnd] }
+    }, null, 2)}\n`);
+
+    const repaired = installClaudeClient(installOpts(sb));
+    assert.equal(repaired.ok, true, JSON.stringify(repaired));
+    assert.deepEqual(repaired.conflicts, []);
+    assert.ok(repaired.changed.some((value) => value.includes("removed stale disposable-test registration")));
+
+    const config = readJson(userConfigFile(sb));
+    const mcp = config.mcpServers as Record<string, unknown>;
+    assert.deepEqual(mcp["other-server"], { command: "other", args: ["--x"] });
+    assert.deepEqual(mcp.crewdispatch, { command: USER_NODE, args: [SERVER_ENTRY] });
+    assert.equal(config.theme, "dark");
+
+    const settings = readJson(settingsFile(sb));
+    assert.deepEqual(settings.permissions, { allow: ["Bash(git status)"] });
+    const serialized = JSON.stringify(settings);
+    const hookGroups = Object.values((settings.hooks ?? {}) as Record<string, Array<Record<string, unknown>>>);
+    const hookCommands = hookGroups.flatMap((groups) => groups.flatMap((group) => {
+      const entries = Array.isArray(group.hooks) ? group.hooks : [];
+      return entries.map((entry) => String((entry as Record<string, unknown>).command ?? ""));
+    }));
+    assert.equal(hookCommands.some((command) => command.includes(staleRoot)), false, "all absent known disposable-test hook paths are removed");
+    assert.equal(serialized.includes("echo unrelated-start"), true, "unrelated user hooks are preserved");
+    assert.equal(hookCommands.some((command) => command.includes(HOOK_ENTRY)), true, "the stable managed hook is installed");
+  } finally {
+    sb.cleanup();
+  }
+});
+
+test("install never claims a missing foreign Claude MCP entry merely because it is under the temp directory", () => {
+  const sb = sandbox("foreign-missing-registration");
+  try {
+    const foreign = path.join(fs.realpathSync.native(os.tmpdir()), "operator-owned-missing-crewdispatch", "dist", "mcp", "server.js");
+    fs.mkdirSync(sb.configDir, { recursive: true });
+    fs.writeFileSync(userConfigFile(sb), `${JSON.stringify({ mcpServers: { crewdispatch: { command: USER_NODE, args: [foreign] } } }, null, 2)}\n`);
+    const result = installClaudeClient(installOpts(sb));
+    assert.equal(result.ok, false);
+    assert.ok(result.conflicts.some((conflict) => conflict.target.endsWith("#mcpServers.crewdispatch")));
+    const current = ((readJson(userConfigFile(sb)).mcpServers as Record<string, unknown>).crewdispatch);
+    assert.deepEqual(current, { command: USER_NODE, args: [foreign] }, "foreign state is preserved exactly");
+  } finally {
+    sb.cleanup();
+  }
+});
+
 test("a fresh config uses an absolute Node MCP command, private POSIX JSON modes, and uninstall restores absent files", () => {
   const sb = sandbox("fresh-private");
   try {

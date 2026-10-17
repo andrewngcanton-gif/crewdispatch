@@ -232,9 +232,9 @@ const EFFORT_LEVELS = ["minimal", "low", "medium", "high", "xhigh", "max"] as co
 const STANDARD_PERMISSION_NOTE = "May request permission to edit files or run commands.";
 const PLAN_PERMISSION_NOTE = "Suggests changes without editing project files.";
 const ACCEPT_EDITS_PERMISSION_NOTE = "Auto-approves normal edits; commands may need approval.";
-const COMMAND_CODE_YOLO_NOTE = "Skips routine approvals; explicit rules and safety checks still apply.";
+const COMMAND_CODE_YOLO_NOTE = "Recommended. Skips routine approvals; explicit rules and safety checks still apply.";
 const WORKBUDDY_YOLO_NOTE = "Runs most actions automatically; risky commands may need approval.";
-const WORKBUDDY_FULL_ACCESS_NOTE = "Skips permission checks; repeated actions may still pause the task.";
+const WORKBUDDY_FULL_ACCESS_NOTE = "Recommended. Skips permission checks; repeated actions may still pause the task.";
 const PROVIDER_RULES_PERMISSION_NOTE = "Provider rules apply; approvals may pause the task.";
 
 function el<T extends HTMLElement>(id: string): T {
@@ -348,22 +348,26 @@ const settingsState: {
   draft: SettingsConfig | null;
   freshness: SettingsFreshness | null;
   loadPromise: Promise<void> | null;
+  /** Monotonic client read generation; a save supersedes any pre-save read. */
+  generation: number;
   dirty: boolean;
   /** A fresh provider read is in flight: the simple loading state is shown. */
   loading: boolean;
   readError: string | null;
   busy: boolean;
-} = { view: null, draft: null, freshness: null, loadPromise: null, dirty: false, loading: false, readError: null, busy: false };
+} = { view: null, draft: null, freshness: null, loadPromise: null, generation: 0, dirty: false, loading: false, readError: null, busy: false };
 const workBuddySettingsState: {
   view: WorkBuddySettingsView | null;
   draft: WorkBuddySettingsConfig | null;
   freshness: SettingsFreshness | null;
   loadPromise: Promise<void> | null;
+  /** Monotonic client read generation; a save supersedes any pre-save read. */
+  generation: number;
   dirty: boolean;
   loading: boolean;
   readError: string | null;
   busy: boolean;
-} = { view: null, draft: null, freshness: null, loadPromise: null, dirty: false, loading: false, readError: null, busy: false };
+} = { view: null, draft: null, freshness: null, loadPromise: null, generation: 0, dirty: false, loading: false, readError: null, busy: false };
 let selectedSettingsProvider: SettingsProvider = "command-code";
 let workBuddyPromotionTimer: number | null = null;
 const WORKBUDDY_PROMOTION_TIMER_MAX_MS = 2_147_000_000;
@@ -826,28 +830,24 @@ function clearProviderFormSelects(selects: HTMLSelectElement[]): void {
   for (const select of selects) select.replaceChildren();
 }
 
-// The ONE simple loading message per provider. It covers the CATALOG phase
-// only, which spawns no CLI process and answers in milliseconds, so neither
-// provider may claim a seconds-long bound here. The slow part of Command Code's
-// read is the separate capability phase, and that reports its own state on the
-// permission/effort controls instead of holding this loading state.
-const COMMAND_CODE_LOADING_MESSAGE = "Loading Command Code…";
-const WORKBUDDY_LOADING_MESSAGE = "loading...";
+// The shared first-read message. It is shown only when this browser has no usable
+// provider view yet; later provider verification stays behind the known form.
+// The wording deliberately avoids provider-specific timing promises.
+const PROVIDER_INITIAL_LOADING_MESSAGE = "Loading configuration… First load may take a moment.";
+const COMMAND_CODE_LOADING_MESSAGE = PROVIDER_INITIAL_LOADING_MESSAGE;
+const WORKBUDDY_LOADING_MESSAGE = PROVIDER_INITIAL_LOADING_MESSAGE;
 
 /**
- * The ONE loading rendering for a provider card. It is shown whenever a fresh
- * provider read is in flight: the provider form is never rendered from a
- * previous (or cached) view while real data is being read.
+ * The ONE initial loading rendering for a provider card. It is shown only when
+ * no usable provider view exists yet; later fresh reads keep the known form.
  *
- * For Command Code this covers only the process-free CATALOG phase, so it
- * clears in milliseconds even when the CLI is cold or hung. The slow capability
- * phase is NOT part of this state: it runs after the form is rendered and
- * reports itself on the permission/effort controls.
+ * For Command Code the card-level state covers the process-free CATALOG phase.
+ * After the catalog renders, the same first-load message stays visible inline
+ * while the initial capability phase runs, so a fast catalog cannot make the
+ * user miss the loading feedback. The model form itself is not blocked.
  *
- * WorkBuddy AI's waiting line is plain `loading...` at normal weight, so it
- * carries a provider-specific modifier instead of weakening the shared
- * `.settings-status > div:first-child` style (weight 650) that non-loading
- * status/error copy also relies on.
+ * First-read loading copy uses the same normal-weight presentation for every
+ * provider; non-loading status/error copy keeps the shared semibold style.
  */
 function renderProviderLoadingState(
   info: HTMLElement,
@@ -858,7 +858,6 @@ function renderProviderLoadingState(
   showLines(info, [provider === "command-code" ? COMMAND_CODE_LOADING_MESSAGE : WORKBUDDY_LOADING_MESSAGE]);
   info.classList.remove("hidden", "warning");
   info.classList.add("loading");
-  info.classList.toggle("wb-loading", provider === "workbuddy-ai");
   catalog.classList.add("hidden");
   effective.classList.add("hidden");
 }
@@ -1085,8 +1084,8 @@ function renderSettings(): void {
   const view = settingsState.view;
   const draft = settingsState.draft;
   if (settingsState.loading) {
-    // A fresh provider read is in flight: show ONLY the simple loading state.
-    // No previous (or cached) view is rendered while real data is being read.
+    // Only the first read has no usable form to keep on screen. Later refreshes
+    // keep the current form visible and never return to this loading state.
     renderProviderLoadingState(ui.cliInfo, ui.catalogInfo, ui.effectiveInfo, "command-code");
     ui.yoloWarning.classList.add("hidden");
     ui.modelIssues.replaceChildren();
@@ -1124,24 +1123,36 @@ function renderSettings(): void {
   fillModelSelect(
     ui.defaultModel,
     visibleDefaultModel,
-    visibleDefaultModel ? "" : "loading…",
+    visibleDefaultModel ? "" : "Unknown",
     "optional"
   );
   fillModelSelect(ui.fallbackModel, draft.rate_limit_fallback_model, "No rate-limit final fallback", "optional");
-  fillCommandCodeEfforts();  renderPermissionNote(ui.yoloWarning, "command-code", draft.permission_mode);
+  fillCommandCodeEfforts();
+  renderPermissionNote(ui.yoloWarning, "command-code", draft.permission_mode);
   ui.saveSettings.disabled = settingsControlsLocked() || !settingsState.dirty;
 
+  const capabilityPending = view.capabilities.checked === false;
   const cliProblem = !view.cli.available || !!view.cli.error;
-  ui.cliInfo.classList.toggle("hidden", !cliProblem);
-  if (cliProblem) {
-    // The model list may be perfectly usable from the installed package while
-    // the CLI's capability probe is unavailable: say exactly which part failed.
-    const cliLines = [view.cli.available ? "Command Code capability check failed." : "Command Code is unavailable."];
-    if (view.cli.error) cliLines.push(view.cli.error);
-    showLines(ui.cliInfo, cliLines);
-    ui.cliInfo.classList.add("warning");
+  if (capabilityPending) {
+    // The process-free catalog can answer too quickly for the card-level first
+    // loading state to be perceptible. Keep the SAME first-load message visible
+    // while the initial capability read runs, without blocking the model form.
+    showLines(ui.cliInfo, [COMMAND_CODE_LOADING_MESSAGE]);
+    ui.cliInfo.classList.remove("hidden", "warning");
+    ui.cliInfo.classList.add("loading");
   } else {
-    ui.cliInfo.classList.remove("warning");
+    ui.cliInfo.classList.remove("loading");
+    ui.cliInfo.classList.toggle("hidden", !cliProblem);
+    if (cliProblem) {
+      // The model list may be perfectly usable from the installed package while
+      // the CLI's capability probe is unavailable: say exactly which part failed.
+      const cliLines = [view.cli.available ? "Command Code capability check failed." : "Command Code is unavailable."];
+      if (view.cli.error) cliLines.push(view.cli.error);
+      showLines(ui.cliInfo, cliLines);
+      ui.cliInfo.classList.add("warning");
+    } else {
+      ui.cliInfo.classList.remove("warning");
+    }
   }
 
   const catalogProblem = !view.catalog.reliable || !!view.catalog.error;
@@ -1183,9 +1194,9 @@ function renderSettings(): void {
 // The ONE provider-settings fresh loader (shared by both providers)
 // ---------------------------------------------------------------------------
 //
-// Opening Settings, switching provider and the post-save refresh all perform a
-// real provider read: the simple loading state is shown while the read is in
-// flight, and the provider form is only rendered from that read's response.
+// Opening Settings, switching provider and post-save verification all perform a
+// real provider read. Only the first usable read may show provider-level loading;
+// once a usable view exists, fresh verification runs behind that visible form.
 
 interface ProviderSettingsLoad<TView, TConfig> {
   path: string;
@@ -1194,6 +1205,7 @@ interface ProviderSettingsLoad<TView, TConfig> {
     draft: TConfig | null;
     freshness: SettingsFreshness | null;
     loadPromise: Promise<void> | null;
+    generation: number;
     dirty: boolean;
     loading: boolean;
     readError: string | null;
@@ -1219,18 +1231,28 @@ interface ProviderSettingsLoad<TView, TConfig> {
 function loadProviderSettingsFresh<TView, TConfig>(load: ProviderSettingsLoad<TView, TConfig>): Promise<void> {
   const state = load.state;
   if (state.loadPromise) return state.loadPromise;
-  // A previous failure must not block a new explicit attempt, and a stale
-  // message from it must not sit next to the loading state.
+  const generation = ++state.generation;
+  const hadUsableView = state.view !== null && state.draft !== null;
+  // A previous failure must not block a new explicit attempt. Once a provider
+  // has a usable view, a refresh is deliberately silent: keep the current form
+  // on screen instead of blanking it behind another loading state.
   state.readError = null;
-  state.loading = true;
+  state.loading = !hadUsableView;
+  if (hadUsableView && state.freshness) {
+    // Keep the known model/config form visible, but do not keep presenting
+    // time-sensitive Free-now evidence as freshly verified during the refresh.
+    state.freshness = { ...state.freshness, billing_verified: false };
+  }
   load.setMessage("");
   load.render();
   let pending: { view: TView; isCurrent: () => boolean } | null = null;
   const base = (async () => {
     try {
       const fresh = await api<SettingsFreshEnvelope<TView> | InvalidSettingsView>(`${load.path}?fresh=1`);
+      if (generation !== state.generation) return;
       if (!fresh.ok) {
-        load.markInvalid(fresh);
+        if (hadUsableView) load.setMessage("Refresh failed.");
+        else load.markInvalid(fresh);
         return;
       }
       // A save owns the view while it is in flight: its own fresh re-read is
@@ -1239,13 +1261,20 @@ function loadProviderSettingsFresh<TView, TConfig>(load: ProviderSettingsLoad<TV
       if (state.busy) return;
       load.applyView(fresh.view, fresh.freshness, true);
       load.setMessage(state.dirty ? load.dirtyMessage : "");
-      const applied = fresh.view;
-      pending = { view: applied, isCurrent: () => state.view === applied && !state.busy };
+      const applied = state.view ?? fresh.view;
+      pending = {
+        view: applied,
+        isCurrent: () => generation === state.generation && state.view === applied && !state.busy
+      };
     } catch (error) {
-      load.markUnavailable(errorMessage(error));
+      if (generation !== state.generation) return;
+      if (hadUsableView) load.setMessage("Refresh failed.");
+      else load.markUnavailable(errorMessage(error));
     } finally {
-      state.loading = false;
-      load.render();
+      if (generation === state.generation) {
+        state.loading = false;
+        load.render();
+      }
     }
   })();
   state.loadPromise = base.then(() => {
@@ -1267,7 +1296,21 @@ function loadProviderSettingsFresh<TView, TConfig>(load: ProviderSettingsLoad<TV
 
 function applySettingsView(view: SettingsView, freshness: SettingsFreshness | null, preserveDraft = false): void {
   const keepDraft = preserveDraft && settingsState.dirty && settingsState.draft ? settingsState.draft : null;
-  settingsState.view = view;
+  const previousView = settingsState.view;
+  const previousObservedDefault = previousView?.catalog.default_model ?? null;
+  const withObservedDefault = !view.config.default_model && !view.catalog.default_model && previousObservedDefault
+    ? { ...view, catalog: { ...view.catalog, default_model: previousObservedDefault } }
+    : view;
+  // A background catalog refresh is not evidence that known CLI capabilities
+  // disappeared. Keep the last confirmed controls usable until the fresh
+  // capability phase replaces them; only the very first load has to wait.
+  const nextView = preserveDraft
+    && withObservedDefault.capabilities.checked === false
+    && previousView !== null
+    && previousView.capabilities.checked !== false
+    ? { ...withObservedDefault, capabilities: previousView.capabilities }
+    : withObservedDefault;
+  settingsState.view = nextView;
   settingsState.draft = keepDraft ?? { ...view.config };
   settingsState.freshness = freshness;
   if (!keepDraft) settingsState.dirty = false;
@@ -1332,7 +1375,7 @@ function applySettingsCapabilityPatch(patch: SettingsCapabilityPatchEnvelope["pa
   if (!view) return;
   const catalog = patch.catalog ?? {
     ...view.catalog,
-    default_model: patch.observed_default_model
+    default_model: patch.observed_default_model ?? view.catalog.default_model
   };
   settingsState.view = {
     ...view,
@@ -1350,42 +1393,38 @@ async function saveSettings(): Promise<void> {
   if (settingsState.busy || settingsState.readError || !settingsState.dirty || !view || !draft) return;
   const payload: SettingsConfig = {
     cli_path: draft.cli_path,
-    default_model: draft.default_model,
+    default_model: ui.defaultModel.value || draft.default_model,
     rate_limit_fallback_model: ui.fallbackModel.value || null,
     permission_mode: view.capabilities.permission_modes.length ? ui.permissionMode.value || draft.permission_mode : draft.permission_mode,
     default_effort: view.capabilities.supports_effort ? ui.defaultEffort.value || null : draft.default_effort,
     rate_limit_fallback_effort: view.capabilities.supports_effort ? ui.fallbackEffort.value || null : draft.rate_limit_fallback_effort
   };
+  // A save supersedes any read that started before it. The persisted response
+  // is enough to release the UI; provider verification continues in background.
+  settingsState.generation += 1;
+  settingsState.loadPromise = null;
+  settingsState.loading = false;
   settingsState.busy = true;
   ui.settingsMessage.textContent = "Saving…";
   ui.commandCodeCard.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>("input, select, button").forEach((control) => {
     control.disabled = true;
   });
-  let submitted = false;
-  let capabilityView: SettingsView | null = null;
+  let saved = false;
   try {
-    await api<{ ok: boolean; config: SettingsConfig }>("/api/settings", { method: "PUT", body: JSON.stringify(payload) });
-    submitted = true;
-    const refreshed = await api<SettingsFreshEnvelope<SettingsView> | InvalidSettingsView>("/api/settings?fresh=1");
-    if (!refreshed.ok) {
-      const field = refreshed.field ? " · field: " + refreshed.field : "";
-      settingsState.readError = refreshed.code + field;
-      ui.settingsMessage.textContent =
-        "Settings were submitted, but re-reading them failed (" + refreshed.code + field + "): " + refreshed.message + " Saving is disabled.";
-    } else {
-      applySettingsView(refreshed.view, refreshed.freshness, false);
-      ui.settingsMessage.textContent = "";
-      capabilityView = refreshed.view;
-    }
+    const response = await api<{ ok: boolean; config: SettingsConfig }>("/api/settings", { method: "PUT", body: JSON.stringify(payload) });
+    settingsState.view = { ...view, config: response.config };
+    settingsState.draft = { ...response.config };
+    settingsState.dirty = false;
+    settingsState.readError = null;
+    ui.settingsMessage.textContent = "";
+    saved = true;
   } catch (error) {
-    ui.settingsMessage.textContent = (submitted ? "Settings were submitted, but re-reading failed: " : "Save failed: ") + errorMessage(error);
+    ui.settingsMessage.textContent = "Save failed: " + errorMessage(error);
   } finally {
     settingsState.busy = false;
     renderSettings();
   }
-  // The post-save refresh is the catalog phase too, so its capability evidence
-  // arrives as the same separate later read — after the save released the view.
-  if (capabilityView) runSettingsCapabilityFollowUp(capabilityView);
+  if (saved) void loadSettings();
 }
 
 function workBuddyControlsLocked(): boolean {
@@ -1624,8 +1663,8 @@ function renderWorkBuddySettings(): void {
   const view = workBuddySettingsState.view;
   const draft = workBuddySettingsState.draft;
   if (workBuddySettingsState.loading) {
-    // Same single loading contract as Command Code: no previous (or cached)
-    // view is rendered while the fresh provider read is in flight.
+    // Only the first read has no usable form to keep on screen. Later refreshes
+    // keep the current WorkBuddy form visible instead of blanking it.
     renderProviderLoadingState(ui.wbCliInfo, ui.wbCatalogInfo, ui.wbEffectiveInfo, "workbuddy-ai");
     ui.wbYoloWarning.classList.add("hidden");
     ui.wbModelIssues.replaceChildren();
@@ -1635,7 +1674,7 @@ function renderWorkBuddySettings(): void {
     lockProviderCard(ui.wbCard);
     return;
   }
-  for (const item of [ui.wbCliInfo, ui.wbCatalogInfo, ui.wbEffectiveInfo]) item.classList.remove("loading", "wb-loading");
+  for (const item of [ui.wbCliInfo, ui.wbCatalogInfo, ui.wbEffectiveInfo]) item.classList.remove("loading");
   if (workBuddySettingsState.readError !== null) {
     ui.wbCliInfo.classList.remove("hidden");
     ui.wbCliInfo.classList.add("warning");
@@ -1772,37 +1811,40 @@ async function saveWorkBuddySettings(): Promise<void> {
       ? ui.wbFallbackEffort.value || null
       : draft.rate_limit_fallback_effort
   };
+  // WorkBuddy's provider re-read can take longer than the config write itself.
+  // Finish Saving as soon as the write succeeds and verify in the background.
+  workBuddySettingsState.generation += 1;
+  workBuddySettingsState.loadPromise = null;
+  workBuddySettingsState.loading = false;
   workBuddySettingsState.busy = true;
   ui.wbSettingsMessage.textContent = "Saving…";
   ui.wbCard.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>("input, select, button").forEach((control) => {
     control.disabled = true;
   });
-  let submitted = false;
+  let saved = false;
   try {
-    await api<{ ok: boolean; config: WorkBuddySettingsConfig }>("/api/providers/workbuddy-ai/settings", { method: "PUT", body: JSON.stringify(payload) });
-    submitted = true;
-    const refreshed = await api<SettingsFreshEnvelope<WorkBuddySettingsView> | InvalidSettingsView>("/api/providers/workbuddy-ai/settings?fresh=1");
-    if (!refreshed.ok) {
-      workBuddySettingsState.readError = refreshed.code;
-      ui.wbSettingsMessage.textContent = "Settings were submitted, but re-reading failed: " + refreshed.message;
-    } else {
-      applyWorkBuddySettingsView(refreshed.view, refreshed.freshness, false);
-      ui.wbSettingsMessage.textContent = "";
-    }
+    const response = await api<{ ok: boolean; config: WorkBuddySettingsConfig }>("/api/providers/workbuddy-ai/settings", { method: "PUT", body: JSON.stringify(payload) });
+    workBuddySettingsState.view = { ...view, config: response.config };
+    workBuddySettingsState.draft = { ...response.config };
+    workBuddySettingsState.dirty = false;
+    workBuddySettingsState.readError = null;
+    ui.wbSettingsMessage.textContent = "";
+    saved = true;
   } catch (error) {
-    ui.wbSettingsMessage.textContent = (submitted ? "Settings were submitted, but re-reading failed: " : "Save failed: ") + errorMessage(error);
+    ui.wbSettingsMessage.textContent = "Save failed: " + errorMessage(error);
   } finally {
     workBuddySettingsState.busy = false;
     renderWorkBuddySettings();
   }
+  if (saved) void loadWorkBuddySettings();
 }
 
 function renderSelectedProviderSettings(): void {
   ui.settingsProvider.value = selectedSettingsProvider;
   ui.commandCodeCard.classList.toggle("hidden", selectedSettingsProvider !== "command-code");
   ui.wbCard.classList.toggle("hidden", selectedSettingsProvider !== "workbuddy-ai");
-  // Render the selected provider's CURRENT state: its simple loading state
-  // while a fresh read runs, or the form built from the last fresh response.
+  // Render the selected provider's current usable state immediately. A later
+  // refresh may replace it, but normal viewing never blanks a known form.
   if (selectedSettingsProvider === "command-code") renderSettings();
   else renderWorkBuddySettings();
 }
@@ -2998,8 +3040,8 @@ ui.navSettings.addEventListener("click", () => {
   showView("settings");
   if (entering) {
     renderSelectedProviderSettings();
-    // Every Settings open performs a fresh provider read before the form is
-    // rendered; the simple loading state is shown until it returns.
+    // Refresh in the background. If this provider was already read, the existing
+    // form stays visible and interactive while the new read runs.
     loadSelectedProviderSettings();
     void loadGlobalSettings(true);
   }
@@ -3008,8 +3050,7 @@ ui.settingsProvider.addEventListener("change", () => {
   const value = ui.settingsProvider.value as SettingsProvider;
   selectedSettingsProvider = value === "workbuddy-ai" ? value : "command-code";
   renderSelectedProviderSettings();
-  // Every provider switch performs a fresh provider read before the form is
-  // rendered; the simple loading state is shown until it returns.
+  // Refresh in the background without blanking an already-known provider form.
   loadSelectedProviderSettings();
 });
 document.addEventListener("visibilitychange", () => {

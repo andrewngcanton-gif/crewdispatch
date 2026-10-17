@@ -162,7 +162,7 @@ async function prepareAcceptanceRuntime(temp: string, jobRoot: string, env: Node
     JOBQUAY_TEST_LAUNCHCTL_STATE: path.join(temp, "launchctl-state.json")
   };
   const install = runJsonProcess(sourceInstaller, ["install", "--target", installedTarget], temp, installEnv, "candidate install");
-  assert.equal(install.packageVersion, "0.1.8", `candidate install version mismatch: ${JSON.stringify(install)}`);
+  assert.equal(install.packageVersion, "0.1.9", `candidate install version mismatch: ${JSON.stringify(install)}`);
 
   const mcpEntry = path.join(installedTarget, "dist", "mcp", "server.js");
   const installedCli = path.join(installedTarget, "dist", "cli", "crewdispatch-cli.js");
@@ -173,7 +173,11 @@ async function prepareAcceptanceRuntime(temp: string, jobRoot: string, env: Node
   const mcpConfig = JSON.parse(fs.readFileSync(path.join(installedTarget, "plugins", "crewdispatch", ".mcp.json"), "utf8")) as {
     mcpServers?: { crewdispatch?: { command?: string; args?: string[] } };
   };
-  assert.equal(path.resolve(String(mcpConfig.mcpServers?.crewdispatch?.command || "")), path.resolve(process.execPath));
+  assert.equal(
+    fs.realpathSync.native(path.resolve(String(mcpConfig.mcpServers?.crewdispatch?.command || ""))),
+    fs.realpathSync.native(path.resolve(process.execPath)),
+    "installed MCP Node command may use an equivalent symlink spelling, but must resolve to the same executable"
+  );
   assert.equal(path.resolve(String(mcpConfig.mcpServers?.crewdispatch?.args?.[0] || "")), path.resolve(mcpEntry));
   assert.equal(mcpEntry.startsWith(candidateRoot), false, "installed MCP entry must not point back to the unpacked candidate root");
 
@@ -184,7 +188,7 @@ async function prepareAcceptanceRuntime(temp: string, jobRoot: string, env: Node
   const ping = await fetch(`${apiBase}/api/ping`);
   assert.equal(ping.status, 200, `installed Hub ping failed (${ping.status})`);
   const pingBody = await ping.json() as Record<string, unknown>;
-  assert.equal(pingBody.version, "0.1.8");
+  assert.equal(pingBody.version, "0.1.9");
 
   return {
     mcpEntry,
