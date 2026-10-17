@@ -310,7 +310,7 @@ jobs:
         with:
           name: CrewDispatch-0.1.9-macos-installer-ci
           path: installer-out
-      - name: Install and completely uninstall the exact package
+      - name: Upgrade immutable 0.1.8 package and completely uninstall the exact 0.1.9 package
         shell: bash
         run: |
           set -euo pipefail
@@ -321,14 +321,29 @@ jobs:
           sudo chown "$USER:$(id -gn)" /dev/console
           restore_console() { sudo chown "$ORIGINAL_CONSOLE_OWNER" /dev/console || true; }
           trap restore_console EXIT
-          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.9.pkg -target /; then
+
+          BASELINE="$RUNNER_TEMP/CrewDispatch-0.1.8.pkg"
+          curl -fL --retry 3             'https://github.com/andrewngcanton-gif/crewdispatch/releases/download/v0.1.8/CrewDispatch-0.1.8.pkg'             -o "$BASELINE"
+          BASELINE_SHA="$(shasum -a 256 "$BASELINE" | awk '{print $1}')"
+          test "$BASELINE_SHA" = '3db91354319deadfc70680c5c91f8284e0abf9d550d38b73407917f07f6b75c4'
+          if ! sudo installer -pkg "$BASELINE" -target /; then
             sudo tail -n 200 /var/log/install.log || true
             exit 1
           fi
           TARGET="$HOME/Library/Application Support/CrewDispatch/runtime"
           test -f "$TARGET/.jobquay-install.json"
+          test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.8'
+          OLD_INSTALL_ID="$(node -p "require(process.argv[1]).installId" "$TARGET/.jobquay-install.json")"
+          test -n "$OLD_INSTALL_ID"
+
+          if ! sudo installer -pkg installer-out/CrewDispatch-0.1.9.pkg -target /; then
+            sudo tail -n 200 /var/log/install.log || true
+            exit 1
+          fi
+          test -f "$TARGET/.jobquay-install.json"
           test "$(node -p "require(process.argv[1]).version" "$TARGET/package.json")" = '0.1.9'
-          test -f "$HOME/.codex/prompts/crewdispatch.md"
+          NEW_INSTALL_ID="$(node -p "require(process.argv[1]).installId" "$TARGET/.jobquay-install.json")"
+          test "$NEW_INSTALL_ID" = "$OLD_INSTALL_ID"          test -f "$HOME/.codex/prompts/crewdispatch.md"
           test -f "$HOME/.codex/crewdispatch-install.json"
           test -f "$HOME/.claude/commands/crewdispatch.md"
           test -f "$HOME/.claude/skills/crewdispatch/SKILL.md"
