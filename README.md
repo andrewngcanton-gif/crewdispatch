@@ -2,6 +2,12 @@
 
 CrewDispatch is a local orchestration layer for durable coding-agent jobs. A caller such as Codex or Claude can dispatch work to supported providers, leave the turn, and later collect the same persisted job result. The first public release targets Command Code and WorkBuddy AI.
 
+## Watch the Demo
+
+[![CrewDispatch demo — Make Your AI Quota Last Longer](assets/crewdispatch-demo-cover.jpg)](https://www.youtube.com/watch?v=0ItbPMPjRis)
+
+*Installation, configuration, and real workflows in Codex and Claude.*
+
 ## Requirements
 
 - **Node.js 22+**, installed and managed by the user. CrewDispatch does not bundle or replace Node/npm.
