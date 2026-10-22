@@ -4,9 +4,9 @@ CrewDispatch is a local orchestration layer for durable coding-agent jobs. A cal
 
 ## Requirements
 
-- Node.js 22 or newer, installed and managed by the user. CrewDispatch does not bundle or replace Node/npm.
+- **Node.js 22+**, installed and managed by the user. CrewDispatch does not bundle or replace Node/npm.
 - Windows x64, macOS Apple Silicon, or macOS Intel x86_64.
-- Command Code and/or WorkBuddy AI installed and authenticated separately when you want to use that provider.
+- **Command Code CLI** and/or **WorkBuddy AI** (<https://www.workbuddy.ai/>) installed and authenticated separately when you want to use that provider.
 
 CrewDispatch does not modify the global `PATH`, does not install provider accounts, and does not bundle provider credentials.
 
