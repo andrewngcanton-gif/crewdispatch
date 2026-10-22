@@ -8,6 +8,8 @@ CrewDispatch is a local orchestration layer for durable coding-agent jobs. A cal
 
 *Installation, configuration, and real workflows in Codex and Claude.*
 
+**Written guide:** [CrewDispatch Setup Guide](https://vibeatma.blogspot.com/2026/10/crewdispatch-setup-guide.html)
+
 ## Requirements
 
 - **Node.js 22+**, installed and managed by the user. CrewDispatch does not bundle or replace Node/npm.
