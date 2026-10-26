@@ -150,6 +150,10 @@ export const WORKBUDDY_QUOTA_ERROR_DETAIL =
   "Quota exceeded: 429 usage exceeds frequency limit, but usage resets at <reset-time>; " +
   "alternatively, switch models to continue using it.";
 
+/** Later live provider wording for the same trusted 429 quota condition. */
+export const WORKBUDDY_QUOTA_TOO_MANY_REQUESTS_DETAIL =
+  "Quota exceeded: 429 too many requests";
+
 export const WORKBUDDY_QUOTA_ACP_PROMPT_RESULT = Object.freeze({
   stopReason: "refusal",
   _meta: Object.freeze({
@@ -186,8 +190,8 @@ export const WORKBUDDY_QUOTA_RESULT_RECORD: Readonly<Record<string, unknown>> = 
  * `provider_refusal` (exit 11) with `fallback_eligible:false` and the
  * configured fallback was never tried.
  *
- * The volatile reset instant is normalized to `<reset-time>` (the provider
- * wording and the decision-bearing prefix stay exact); no job/session id is
+ * The volatile reset instant is normalized to `<reset-time>` (the recorded
+ * wording stays exact for replay, but only numeric HTTP status 429 is decision-bearing); no job/session id is
  * kept beyond the shared fixture session constant.
  */
 export const WORKBUDDY_QUOTA_MISSING_FINISH_ERROR_DETAIL =

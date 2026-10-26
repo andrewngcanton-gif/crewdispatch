@@ -11,12 +11,12 @@ export const HUB_HTML = `<!doctype html>
   <style>
     :root { color-scheme: light; --ink:#17212e; --muted:#64748b; --line:#dce4ee; --bg:#f4f7fb; --card:#fff; --blue:#245de3; --blue-soft:#eaf0ff; --red:#b42331; --green:#16835d; }
     * { box-sizing:border-box; }
-    html, body { margin:0; width:100%; height:100%; font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); }
+    html, body { margin:0; width:100%; height:100%; overflow:hidden; overscroll-behavior:none; font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); }
     button, textarea, select, input { font:inherit; }
     button { cursor:pointer; }
     button:disabled { cursor:not-allowed; opacity:.55; }
     button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
-    .app { display:grid; grid-template-columns:292px minmax(0,1fr); grid-template-rows:minmax(0,1fr); height:100vh; min-height:440px; overflow:hidden; }
+    .app { display:grid; grid-template-columns:292px minmax(0,1fr); grid-template-rows:minmax(0,1fr); height:100vh; height:100dvh; min-height:0; overflow:hidden; }
     .sidebar { background:#fff; border-right:1px solid var(--line); display:flex; flex-direction:column; min-width:0; }
     .brand { padding:20px 20px 16px; border-bottom:1px solid var(--line); }
     .brand h1 { font-size:20px; letter-spacing:-.025em; margin:0; }
@@ -104,6 +104,8 @@ export const HUB_HTML = `<!doctype html>
     .log { flex:1; overflow:auto; padding:10px 14px; font:12px/1.5 "Cascadia Mono",ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace; }
     .log-entry { padding:4px 0; border-bottom:1px solid #f0f3f7; white-space:pre-wrap; overflow-wrap:anywhere; }
     .log-entry.reason { color:#9b591e; }
+    /* The dashboard is a fixed viewport shell. Scroll only within the intended panes; reaching a pane's end must not chain into a blank document tail. */
+    .jobs, .conversation, .log, .settings, .pending-approvals, .approval, .approval-detail, .approval-op { overscroll-behavior:contain; }
     .statusbar { min-height:30px; padding:5px 12px; background:#fff; color:var(--muted); font-size:12px; border-top:1px solid var(--line); }
     .error { color:var(--red); }
     .settings { flex:1; min-height:0; overflow:auto; padding:22px; }

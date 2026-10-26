@@ -513,11 +513,11 @@ test("a rejected session/prompt preserves the runtime's bounded model-error evid
       }
     },
     {
-      // The message-based precedence must stay intact: a rate-limit message is
-      // classified as a rate limit even when model-error evidence is present.
+      // A structured HTTP status outranks model-error evidence. Provider prose
+      // is deliberately irrelevant to rate-limit classification.
       code: -32004,
-      message: "429 Too Many Requests",
-      data: { category: "model_service", finishReason: "error", reason: "provider_finish_reason_error" }
+      message: "Provider request failed",
+      data: { httpStatusCode: 429, category: "model_service", finishReason: "error", reason: "provider_finish_reason_error" }
     },
     {
       // Unsafe tokens are refused by the boundary: no model-error evidence
@@ -578,7 +578,7 @@ test("a rejected session/prompt preserves the runtime's bounded model-error evid
     assert.ok(modelError, "the model-service rejection reaches the bridge as an error");
     assert.deepEqual(
       readAcpRpcErrorEvidence(modelError),
-      { code: -32004, category: "model_service", finishReason: "error", reason: "provider_finish_reason_error" },
+      { code: -32004, httpStatus: null, category: "model_service", finishReason: "error", reason: "provider_finish_reason_error" },
       "only the bounded safe tokens of error.data are retained"
     );
     const classified = classifyBridgeError(modelError);
@@ -595,6 +595,10 @@ test("a rejected session/prompt preserves the runtime's bounded model-error evid
     assert.equal(classifyBridgeError(rateLimited).code, "rate_limit");
     assert.equal(classifyBridgeError(rateLimited).exitCode, 5);
     assert.equal(classifyBridgeError(rateLimited).finishReason, null);
+    assert.equal(readAcpRpcErrorEvidence(rateLimited)?.httpStatus, 429);
+    assert.equal(classifyBridgeError(new Error("rate limit: please wait")).code, "bridge_error", "words alone never trigger model fallback");
+    assert.equal(classifyBridgeError(new Error("Too Many Requests")).code, "bridge_error", "provider prose is not decision-bearing without status 429");
+    assert.equal(classifyBridgeError(new Error("request failed (429)")).code, "rate_limit", "a standalone numeric 429 remains a bounded compatibility fallback");
 
     // An unsafe evidence payload proves nothing: the historical classification stays.
     const unsafe = await client.prompt("s-2", "three").then(

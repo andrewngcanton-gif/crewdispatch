@@ -1407,17 +1407,61 @@ const ACP_RATE_LIMIT_OUTCOME: AcpTerminalOutcome = {
 };
 
 /**
- * The recorded live quota diagnostic prefix. The observed job
- * `job-muqxgzqn-8k2k0g` (2026-10-02) carried the reset instant and the
- * switch-models suggestion after this prefix and NO `finish_reason`; the
- * decision-bearing part is the provider's own `Quota exceeded: 429 usage
- * exceeds frequency limit` shape, never an arbitrary 429 substring.
+ * Extract one bounded HTTP status from WorkBuddy's trusted ACP terminal error
+ * metadata without depending on any provider prose.
+ *
+ * WorkBuddy's internal runtime keeps `httpStatusCode`, but the current ACP
+ * prompt-result builder exposes only `codebuddy.ai/errorMessage`. That field is
+ * sometimes JSON and sometimes plain text. Prefer known structured status keys;
+ * otherwise accept only a standalone 3-digit HTTP-status token, never digits
+ * embedded in ids, timestamps or longer numbers. The surrounding words are not
+ * decision-bearing and may change language/version freely.
  */
-const ACP_QUOTA_ERROR_DETAIL = /^quota exceeded:\s*429\s+usage exceeds frequency limit\b/i;
+export function safeAcpHttpStatus(value: unknown): number | null {
+  if (typeof value === "number" && Number.isInteger(value) && value >= 100 && value <= 599) return value;
+  if (typeof value === "string" && /^\d{3}$/.test(value.trim())) {
+    const parsed = Number(value.trim());
+    return parsed >= 100 && parsed <= 599 ? parsed : null;
+  }
+  return null;
+}
+
+function acpStructuredHttpStatus(value: unknown, depth = 0): number | null {
+  if (!value || typeof value !== "object" || Array.isArray(value) || depth > 2) return null;
+  const record = value as Record<string, unknown>;
+  for (const key of ["httpStatusCode", "httpStatus", "statusCode", "status"] as const) {
+    const status = safeAcpHttpStatus(record[key]);
+    if (status !== null) return status;
+  }
+  for (const key of ["response", "error", "data"] as const) {
+    const nested = acpStructuredHttpStatus(record[key], depth + 1);
+    if (nested !== null) return nested;
+  }
+  return null;
+}
+
+export function acpHttpStatusFromErrorDetail(errorDetail: string | null | undefined): number | null {
+  // Inspect structured status BEFORE safeAcpErrorDetail intentionally strips the
+  // JSON payload down to its display-safe message. Only the numeric status is
+  // retained; no other provider data crosses this boundary.
+  const raw = stringOf(errorDetail);
+  if (raw?.trim().startsWith("{")) {
+    try {
+      const structured = acpStructuredHttpStatus(JSON.parse(raw));
+      if (structured !== null) return structured;
+    } catch {
+      // Malformed JSON remains unusable evidence; the sanitizer below will also
+      // refuse to carry it as a diagnostic.
+    }
+  }
+  const detail = safeAcpErrorDetail(errorDetail);
+  if (detail === null) return null;
+  const match = /(?:^|[^A-Za-z0-9])([1-5]\d{2})(?![A-Za-z0-9])/.exec(detail);
+  return match ? Number(match[1]) : null;
+}
 
 function hasAcpQuotaErrorEvidence(errorDetail: string | null | undefined): boolean {
-  const detail = safeAcpErrorDetail(errorDetail);
-  return detail !== null && ACP_QUOTA_ERROR_DETAIL.test(detail);
+  return acpHttpStatusFromErrorDetail(errorDetail) === 429;
 }
 
 /**
@@ -1525,9 +1569,9 @@ export const ACP_TERMINAL_EXIT_OUTCOMES: ReadonlyMap<number, AcpTerminalOutcome>
  * `errorDetail` is only the bounded provider terminal error metadata from this
  * ACP prompt response. It is never inferred from task text, assistant output,
  * tool output, or transcript. It affects classification only when the raw stop
- * reason is `refusal` and the sanitized message starts with the recorded
- * `Quota exceeded: 429 usage exceeds frequency limit` shape; unrelated 429 text
- * remains an ordinary refusal. The provider may omit the finish reason on that
+ * reason is `refusal` and trusted terminal metadata proves bounded HTTP status
+ * `429`; other status codes, numbers embedded in ids/timestamps, and all
+ * assistant/tool/transcript text remain ordinary refusal evidence only. The provider may omit the finish reason on that
  * quota path (the observed live shape, JQ-20261002-43): a MISSING/null finish
  * reason therefore still qualifies, while an explicit different finish reason
  * (`content_filter`, `refusal`, ...) keeps its own refusal semantics.
@@ -1542,8 +1586,8 @@ export function classifyAcpStopReason(
   const reason = typeof stopReason === "string" ? stopReason.trim() : "";
   if (!reason || reason === ACP_COMPLETED_STOP_REASON) return { ...ACP_COMPLETION_OUTCOME };
   const finish = safeAcpFinishReason(finishReason);
-  // The ONE evidence-backed quota exception: the provider's own bounded quota
-  // diagnostic beside stop_reason=refusal. The installed runtime may publish
+  // The ONE evidence-backed quota exception: trusted terminal metadata proves
+  // HTTP status 429 beside stop_reason=refusal. Provider wording is not evidence.
   // NO finish reason on this path (the observed live shape, JQ-20261002-43), so
   // an absent/null finish reason still qualifies; an explicit finish reason
   // other than `tool_calls` (content_filter, refusal, ...) keeps its own

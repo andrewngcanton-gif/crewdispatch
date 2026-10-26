@@ -52,11 +52,19 @@ import {
 
 export class JobStoreError extends Error {
   readonly code: string;
-  constructor(code: string, message: string) {
+  readonly systemCode: string | null;
+  constructor(code: string, message: string, systemCode: string | null = null) {
     super(message);
     this.name = "JobStoreError";
     this.code = code;
+    this.systemCode = systemCode;
   }
+}
+
+export function isTransientJobStoreWriteError(error: unknown): error is JobStoreError {
+  if (!(error instanceof JobStoreError) || error.code !== "write_failed") return false;
+  return error.systemCode === "EBUSY" ||
+    (process.platform === "win32" && (error.systemCode === "EPERM" || error.systemCode === "EACCES"));
 }
 
 export type DataRootResolutionSource =
@@ -377,18 +385,23 @@ export function atomicWriteFile(file: string, data: string): void {
   } finally {
     fs.closeSync(fd);
   }
-  // On Windows a concurrent reader can briefly hold the target; retry the rename.
+  // Windows security scanners and short-lived readers can temporarily deny
+  // replacement of the existing job record. The former 8 x 15ms window was too
+  // short for real file contention and could crash a live worker on transient EPERM.
+  const retryDelaysMs = [15, 30, 45, 60, 80, 100, 150, 200, 300, 400, 500] as const;
   let lastError: unknown = null;
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  for (let attempt = 0; attempt <= retryDelaysMs.length; attempt += 1) {
     try {
       fs.renameSync(tmp, file);
       return;
     } catch (e) {
       lastError = e;
-      // Synchronous short sleep (no async boundary): Atomics.wait on a throwaway
-      // SharedArrayBuffer, so the retry loop stays dependency-free.
+      const code = (e as NodeJS.ErrnoException)?.code;
+      const transient = code === "EBUSY" ||
+        (process.platform === "win32" && (code === "EPERM" || code === "EACCES"));
+      if (!transient || attempt >= retryDelaysMs.length) break;
       try {
-        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 15);
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, retryDelaysMs[attempt]!);
       } catch {
         /* Atomics.wait may be unavailable; the next attempt is immediate */
       }
@@ -399,7 +412,11 @@ export function atomicWriteFile(file: string, data: string): void {
   } catch {
     /* best effort */
   }
-  throw new JobStoreError("write_failed", `atomic write failed for ${file}: ${String((lastError as Error)?.message || lastError)}`);
+  throw new JobStoreError(
+    "write_failed",
+    "atomic write failed for " + file + ": " + String((lastError as Error)?.message || lastError),
+    (lastError as NodeJS.ErrnoException | null)?.code ?? null
+  );
 }
 
 function nowIso(now?: () => Date): string {

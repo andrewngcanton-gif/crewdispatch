@@ -37,6 +37,7 @@ import {
   acpTerminalResultRecord,
   acpToolApprovalEvidence,
   classifyAcpStopReason,
+  acpHttpStatusFromErrorDetail,
   safeAcpErrorDetail,
   safeAcpFinishReason
 } from "../../providers/workbuddy-ai/acp-normalizer";
@@ -63,6 +64,7 @@ import {
   WORKBUDDY_QUOTA_MISSING_FINISH_ERROR_DETAIL,
   WORKBUDDY_QUOTA_MISSING_FINISH_RESULT_RECORD,
   WORKBUDDY_QUOTA_RATE_LIMIT_MESSAGE,
+  WORKBUDDY_QUOTA_TOO_MANY_REQUESTS_DETAIL,
   WORKBUDDY_QUOTA_RESULT_RECORD,
   WORKBUDDY_TERMINAL_FIXTURE_MODEL,
   WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
@@ -559,16 +561,49 @@ test("only the recorded ACP quota metadata shape enables the shared rate-limit f
   assert.equal(quota.record.error_detail, WORKBUDDY_QUOTA_ERROR_DETAIL, "the bounded provider diagnostic remains available");
   assert.deepEqual(quota.record.error, { code: ACP_FAILURE_RATE_LIMIT, message: WORKBUDDY_QUOTA_RATE_LIMIT_MESSAGE });
 
-  const unrelated429 = acpTerminalResultRecord({
+  const short429 = acpTerminalResultRecord({
+    sessionId: WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
+    model: WORKBUDDY_TERMINAL_FIXTURE_MODEL,
+    stopReason: "refusal",
+    finalText: "",
+    finishReason: null,
+    errorDetail: WORKBUDDY_QUOTA_TOO_MANY_REQUESTS_DETAIL
+  });
+  assert.equal(short429.exitCode, 5, "provider wording is irrelevant when the trusted terminal detail contains HTTP 429");
+  assert.equal((short429.record.error as Record<string, unknown>).code, ACP_FAILURE_RATE_LIMIT);
+
+  const otherQuotaStatus = acpTerminalResultRecord({
+    sessionId: WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
+    model: WORKBUDDY_TERMINAL_FIXTURE_MODEL,
+    stopReason: "refusal",
+    finalText: "",
+    finishReason: null,
+    errorDetail: "Quota exceeded: 503 service unavailable"
+  });
+  assert.equal(otherQuotaStatus.exitCode, 11, "only provider quota status 429 is fallback eligible");
+  assert.equal((otherQuotaStatus.record.error as Record<string, unknown>).code, ACP_FAILURE_REFUSAL);
+
+  const genericHttp429 = acpTerminalResultRecord({
     sessionId: WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
     model: WORKBUDDY_TERMINAL_FIXTURE_MODEL,
     stopReason: "refusal",
     finalText: "",
     finishReason: "tool_calls",
-    errorDetail: "The diagnostic mentions HTTP 429 records, but not a quota or frequency limit."
+    errorDetail: "HTTP 429"
   });
-  assert.equal(unrelated429.exitCode, 11, "an unrelated 429 remains an ordinary refusal");
-  assert.equal((unrelated429.record.error as Record<string, unknown>).code, ACP_FAILURE_REFUSAL);
+  assert.equal(genericHttp429.exitCode, 5, "provider wording is irrelevant once trusted terminal metadata proves HTTP 429");
+  assert.equal((genericHttp429.record.error as Record<string, unknown>).code, ACP_FAILURE_RATE_LIMIT);
+
+  const embedded429 = acpTerminalResultRecord({
+    sessionId: WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
+    model: WORKBUDDY_TERMINAL_FIXTURE_MODEL,
+    stopReason: "refusal",
+    finalText: "",
+    finishReason: "tool_calls",
+    errorDetail: "request-id=abc429def"
+  });
+  assert.equal(embedded429.exitCode, 11, "429 embedded in an identifier is not an HTTP status token");
+  assert.equal((embedded429.record.error as Record<string, unknown>).code, ACP_FAILURE_REFUSAL);
 
   const quotaTextOnly = acpTerminalResultRecord({
     sessionId: WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
@@ -578,6 +613,15 @@ test("only the recorded ACP quota metadata shape enables the shared rate-limit f
     finishReason: "tool_calls"
   });
   assert.equal(quotaTextOnly.exitCode, 11, "assistant text is never consulted for quota classification");
+
+  const short429TextOnly = acpTerminalResultRecord({
+    sessionId: WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
+    model: WORKBUDDY_TERMINAL_FIXTURE_MODEL,
+    stopReason: "refusal",
+    finalText: WORKBUDDY_QUOTA_TOO_MANY_REQUESTS_DETAIL,
+    finishReason: null
+  });
+  assert.equal(short429TextOnly.exitCode, 11, "provider-looking 429 text in assistant output is never classification evidence");
 
   const contentFilter = acpTerminalResultRecord({
     sessionId: WORKBUDDY_TERMINAL_FIXTURE_SESSION_ID,
@@ -699,20 +743,18 @@ test("the observed missing-finish-reason quota shape is the shared rate limit, n
     "an explicit model refusal remains a provider refusal"
   );
 
-  // Ordinary refusals without the exact provider quota evidence stay refusals.
+  // Trusted terminal status evidence is language-independent; prose alone is not enough.
   assert.equal(classifyAcpStopReason("refusal", undefined, null, null, "Model service error: upstream content policy").exitCode, 11);
   assert.equal(classifyAcpStopReason("refusal", undefined, null, null, undefined).exitCode, 11);
   assert.equal(classifyAcpStopReason("refusal", undefined, null, null, null).exitCode, 11);
-  assert.equal(
-    classifyAcpStopReason("refusal", undefined, null, null, "The diagnostic mentions HTTP 429 records, but not a quota or frequency limit.").exitCode,
-    11,
-    "an unrelated 429 substring is never quota evidence"
-  );
-  assert.equal(
-    classifyAcpStopReason("refusal", undefined, null, null, "quota exceeded: 429 requests were retried").exitCode,
-    11,
-    "a lookalike prefix without the recorded frequency-limit wording stays a refusal"
-  );
+  assert.equal(classifyAcpStopReason("refusal", undefined, null, null, "请求过多 (429)，稍后再试").exitCode, 5);
+  assert.equal(classifyAcpStopReason("refusal", undefined, null, null, "status=429; wording may change").exitCode, 5);
+  assert.equal(classifyAcpStopReason("refusal", undefined, null, null, '{"httpStatusCode":429,"message":"anything"}').exitCode, 5);
+  assert.equal(classifyAcpStopReason("refusal", undefined, null, null, '{"response":{"status":429},"message":"anything"}').exitCode, 5);
+  assert.equal(classifyAcpStopReason("refusal", undefined, null, null, "status=503; service unavailable").exitCode, 11);
+  assert.equal(acpHttpStatusFromErrorDetail("request-id=abc429def"), null, "digits embedded in ids are not HTTP status evidence");
+  assert.equal(acpHttpStatusFromErrorDetail("timestamp=12:34:56.429Z"), null, "milliseconds are not HTTP status evidence");
+  assert.equal(acpHttpStatusFromErrorDetail("Quota exceeded: 429 requests were retried"), 429, "only the numeric status matters");
 
   // Assistant text can never supply the evidence.
   const textOnly = acpTerminalResultRecord({

@@ -3011,6 +3011,24 @@ function showView(view: "jobs" | "settings"): void {
   ui.navSettings.setAttribute("aria-selected", String(view === "settings"));
 }
 
+function maxLivePanelHeight(): number {
+  const workspace = ui.live.parentElement;
+  const liveMin = Number.parseFloat(getComputedStyle(ui.live).minHeight) || 100;
+  if (!workspace) return Math.max(liveMin, Math.min(window.innerHeight * .65, window.innerHeight - 252));
+  const workspaceStyle = getComputedStyle(workspace);
+  const padding = (Number.parseFloat(workspaceStyle.paddingTop) || 0) + (Number.parseFloat(workspaceStyle.paddingBottom) || 0);
+  const visibleHeight = workspace.clientHeight - padding;
+  const visibleOuterHeight = (element: HTMLElement): number => {
+    if (element.classList.contains("hidden")) return 0;
+    const style = getComputedStyle(element);
+    return element.getBoundingClientRect().height + (Number.parseFloat(style.marginTop) || 0) + (Number.parseFloat(style.marginBottom) || 0);
+  };
+  const reserved = visibleOuterHeight(ui.approvalCard) + visibleOuterHeight(ui.composer) + visibleOuterHeight(ui.splitter);
+  const conversationMin = Number.parseFloat(getComputedStyle(ui.conversation).minHeight) || 100;
+  const available = visibleHeight - reserved - conversationMin;
+  return Math.max(liveMin, Math.min(window.innerHeight * .65, available));
+}
+
 function installSplitter(): void {
   let startY = 0;
   let startHeight = 0;
@@ -3021,14 +3039,17 @@ function installSplitter(): void {
   });
   ui.splitter.addEventListener("pointermove", (event) => {
     if (!ui.splitter.hasPointerCapture(event.pointerId)) return;
-    const max = Math.max(100, Math.min(window.innerHeight * .65, window.innerHeight - 230));
-    ui.live.style.height = `${Math.max(100, Math.min(max, startHeight + startY - event.clientY))}px`;
+    const max = maxLivePanelHeight();
+    const min = Number.parseFloat(getComputedStyle(ui.live).minHeight) || 100;
+    ui.live.style.height = `${Math.max(min, Math.min(max, startHeight + startY - event.clientY))}px`;
   });
   ui.splitter.addEventListener("keydown", (event) => {
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
     const current = ui.live.getBoundingClientRect().height;
-    ui.live.style.height = `${Math.max(100, Math.min(window.innerHeight * .65, current + (event.key === "ArrowUp" ? 20 : -20)))}px`;
+    const max = maxLivePanelHeight();
+    const min = Number.parseFloat(getComputedStyle(ui.live).minHeight) || 100;
+    ui.live.style.height = `${Math.max(min, Math.min(max, current + (event.key === "ArrowUp" ? 20 : -20)))}px`;
   });
 }
 

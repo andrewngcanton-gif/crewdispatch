@@ -27,6 +27,8 @@ Only artifacts attached to an official GitHub Release are public releases; local
 - `CrewDispatch-Setup-0.1.9.exe` — Windows x64, per-user installer.
 - `CrewDispatch-0.1.9.pkg` — macOS installer for Apple Silicon and Intel.
 
+**Beta:** `v0.2.0-beta` is a pre-release for early validation, not a replacement for stable `v0.1.9`. Its Windows/macOS installer assets will be attached to the GitHub prerelease when the release gates complete. This beta includes WorkBuddy AI 429 fallback, worker persistence, and Hub scroll-layout fixes; WorkBuddy CN and Qoder remain unsupported in the public build.
+
 GitHub also provides source-code archives automatically. The 0.1.0 manual ZIPs remain available on the historical 0.1.0 release.
 
 ## Main features

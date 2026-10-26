@@ -16,6 +16,7 @@ import { jobRuntimeId, registerOwnedRuntime, releaseRegisteredRuntime, markRunti
 import { captureProcessIdentity, DARWIN_TERMINAL_ACK_ENV } from "../../runtime/process";
 import {
   ACP_FAILURE_MODEL_ERROR,
+  acpHttpStatusFromErrorDetail,
   acpErrorResultRecord,
   acpInitRecord,
   acpTerminalResultRecord,
@@ -24,6 +25,7 @@ import {
   safeAcpErrorDetail,
   safeAcpEvidenceToken,
   safeAcpFinishReason,
+  safeAcpHttpStatus,
   type AcpApprovalEvidence,
   type AcpNormalizer
 } from "./acp-normalizer";
@@ -133,6 +135,8 @@ function boundedMessage(error: unknown): string {
 export interface AcpRpcErrorEvidence {
   /** The JSON-RPC error code (the model error is the runtime's -32004). */
   code: number | string | null;
+  /** A bounded HTTP status when the runtime publishes one in error.data. */
+  httpStatus: number | null;
   /** The runtime's own error category token ("model_service"), when published. */
   category: string | null;
   /** The provider's original finish reason token ("error"), when published. */
@@ -1407,11 +1411,16 @@ export class AcpClient {
         const data = asObject(error.data);
         const evidence: AcpRpcErrorEvidence = {
           code: typeof error.code === "string" || typeof error.code === "number" ? error.code as string | number : null,
+          httpStatus:
+            safeAcpHttpStatus(data?.httpStatusCode) ??
+            safeAcpHttpStatus(data?.httpStatus) ??
+            safeAcpHttpStatus(data?.statusCode) ??
+            safeAcpHttpStatus(data?.status),
           category: safeAcpEvidenceToken(data?.category),
           finishReason: safeAcpFinishReason(data?.finishReason),
           reason: safeAcpEvidenceToken(data?.reason)
         };
-        if (evidence.category || evidence.finishReason || evidence.reason) {
+        if (evidence.httpStatus !== null || evidence.category || evidence.finishReason || evidence.reason) {
           Object.defineProperty(err, ACP_RPC_ERROR_EVIDENCE, { value: evidence, enumerable: false });
         }
         pending.reject(err);
@@ -1591,7 +1600,9 @@ export class AcpClient {
 export function classifyBridgeError(error: unknown): { exitCode: number; code: string; message: string; finishReason: string | null } {
   const message = boundedMessage(error);
   const lower = message.toLowerCase();
-  if (/429|rate.?limit|too many requests|throttl/.test(lower)) return { exitCode: 5, code: "rate_limit", message, finishReason: null };
+  const evidence = readAcpRpcErrorEvidence(error);
+  const httpStatus = evidence?.httpStatus ?? acpHttpStatusFromErrorDetail(message);
+  if (httpStatus === 429) return { exitCode: 5, code: "rate_limit", message, finishReason: null };
   if (/insufficient (?:credits?|quota)|credits? exhausted|out of credits/.test(lower)) return { exitCode: 10, code: "insufficient_credits", message, finishReason: null };
   if (/\b401\b|auth(?:entication)? required|not authenticated|login required|unauthori[sz]ed/.test(lower)) {
     return { exitCode: 3, code: "auth", message, finishReason: null };
@@ -1605,7 +1616,6 @@ export function classifyBridgeError(error: unknown): { exitCode: number; code: s
   if (/\b5\d\d\b|server error|service unavailable/.test(lower)) return { exitCode: 7, code: "server", message, finishReason: null };
   // Transport-proven model-service error: the runtime's own reason token, or
   // its model_service category together with the original finish reason.
-  const evidence = readAcpRpcErrorEvidence(error);
   if (
     evidence &&
     (evidence.reason === "provider_finish_reason_error" ||

@@ -87,6 +87,8 @@ import {
   clearTreeConfirmation,
   clearTreeRecovery,
   ensureRoot,
+  isTransientJobStoreWriteError,
+  JobStoreError,
   assertInside,
   isTreeConfirmed,
   loadJob,
@@ -660,6 +662,8 @@ export interface RunWorkerOptions {
   providerCancelWaitMs?: number;
   /** Provider-owned cancellation seams (tests). */
   providerCancel?: ProviderCancelSeam;
+  /** TEST-ONLY: inject job-record writes to exercise transient persistence failures. */
+  saveJobFn?: typeof saveJob;
 }
 
 /**
@@ -1605,9 +1609,60 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
     };
   }
   const registry = createGenerationRegistry();
-  const persist = (): void => {
+  const saveJobRecord = opts.saveJobFn ?? saveJob;
+  let consecutiveTransientPersistFailures = 0;
+  let persistenceCancelIntentWritten = false;
+  const writePersistenceDiagnostic = (event: string, phase: string, systemCode: string | null = null): void => {
+    const line = "[crewdispatch-persistence] " + JSON.stringify({
+      type: event,
+      jobId: job.id,
+      generation: job.generation,
+      phase,
+      at: nowIso(now),
+      consecutiveFailures: consecutiveTransientPersistFailures,
+      systemCode
+    }) + "\n";
+    try {
+      fs.appendFileSync(workerLogPath(root, job.id), line, "utf8");
+    } catch {
+      try { process.stderr.write(line); } catch { /* diagnostics must never mask the write failure */ }
+    }
+  };
+  const persist = (phase = "state"): void => {
     job.updatedAt = nowIso(now);
-    saveJob(root, job, now);
+    saveJobRecord(root, job, now);
+    if (consecutiveTransientPersistFailures > 0) {
+      writePersistenceDiagnostic("job_record_persist_recovered", phase);
+      consecutiveTransientPersistFailures = 0;
+    }
+  };
+  // Routine in-flight snapshots can retry on the next heartbeat. Critical
+  // transitions (startup ownership, child PID registration, approvals,
+  // generation/model changes and finalization) remain strict and cannot proceed
+  // unless the required durable write succeeds.
+  const persistRecoverably = (phase: string): boolean => {
+    try {
+      persist(phase);
+      return true;
+    } catch (error) {
+      if (!isTransientJobStoreWriteError(error)) throw error;
+      consecutiveTransientPersistFailures += 1;
+      writePersistenceDiagnostic("job_record_persist_transient_failure", phase, error.systemCode);
+      // Never let an unpersistable task run indefinitely. A separate durable
+      // cancel-intent file routes cleanup through the existing provider-cancel
+      // handshake and process-tree confirmation path.
+      if (consecutiveTransientPersistFailures >= 3 && !persistenceCancelIntentWritten) {
+        try {
+          writeCancelIntent(root, job.id, "persistence-failure", now);
+          persistenceCancelIntentWritten = true;
+          writePersistenceDiagnostic("job_record_persist_cancel_requested", phase, error.systemCode);
+        } catch (intentError) {
+          const code = intentError instanceof JobStoreError ? intentError.systemCode : null;
+          writePersistenceDiagnostic("job_record_persist_cancel_intent_failed", phase, code);
+        }
+      }
+      return false;
+    }
   };
   const killOpts: KillTreeOptions = { graceMs, isAliveFn: alive, execFileFn: opts.execFileFn, delayFn: sleep };
 
@@ -1716,13 +1771,13 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
   const tick = (): void => {
     if (stopped) return;
     job.heartbeatAt = nowIso(now);
-    persist();
+    persistRecoverably("heartbeat");
     if (cancelRequested) return;
     const intent = readCancelIntent(root, job.id);
     if (!intent) return;
     cancelRequested = true;
     job.cancelIntent = { requested: true, requestedAt: nowIso(now), by: intent.by || "cancel" };
-    persist();
+    persistRecoverably("cancel-intent");
     // PROVIDER-OWNED TURN (JQ-20261006-58): the tree kill below cannot reach a
     // turn the provider runs outside CrewDispatch's child tree (WorkBuddy AI
     // runs it in the Desktop sidecar's ACP runtime). Ask the provider to cancel
@@ -2418,7 +2473,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
         onSessionId: (sid) => {
           if (!isValidSessionIdFor(job.provider, sid) || job.sessionId === sid) return;
           job.sessionId = sid;
-          persist();
+          persistRecoverably("session-id");
         },
         // IN-FLIGHT canonical usage: while the CLI is still running, a parsed
         // change to the attempt's canonical usage is persisted with the SAME
@@ -2430,7 +2485,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
         onUsageChange: (snapshot) => {
           attempt.usage = toJobUsage(snapshot);
           job.usage = totalUsage(job.attempts);
-          persist();
+          persistRecoverably("usage");
         },
         // The provider-neutral pending approval of THIS generation: persisted
         // verbatim while the provider turn waits for a decision, cleared the
@@ -2541,7 +2596,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
       // fabricated 0).
       attempt.usage = toJobUsage(runner.normalizeUsage(run.state));
       job.usage = totalUsage(job.attempts);
-      persist();
+      persistRecoverably("attempt-settlement");
 
       // A natural Darwin close may become an OS-GROUP confirmation only after a
       // provider terminal record was parsed before `close`. A successful pre-close
@@ -2691,7 +2746,7 @@ export async function runWorker(opts: RunWorkerOptions): Promise<RunWorkerResult
         job.childPid = null;
         job.childStartedAtUs = null;
         job.childGeneration = null;
-        persist();
+        persistRecoverably("child-tree-confirmed-stopped");
       }
       const decided = decideOutcome(run, cls, runner.exit8IsSegment ?? true);
       attempt.segment = decided.segment;

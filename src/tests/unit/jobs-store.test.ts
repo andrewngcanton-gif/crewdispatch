@@ -7,6 +7,7 @@ import path from "node:path";
 import { createJobRecord } from "../../jobs/service";
 import {
   appendLog,
+  atomicWriteFile,
   assertInside,
   clearTreeConfirmation,
   isTreeConfirmed,
@@ -69,6 +70,31 @@ test("the write is atomic: no .tmp residue and the target is always valid JSON",
   assert.deepEqual(leftovers, []);
   assert.equal(loadJob(root, job.id)?.task, "atomic-4");
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+test("atomic job writes survive more than the former 120ms Windows rename retry window", { skip: process.platform !== "win32" }, () => {
+  const root = tmpRoot();
+  const target = path.join(root, "record.json");
+  fs.writeFileSync(target, JSON.stringify({ version: "old" }), "utf8");
+  const mutableFs = fs as unknown as { renameSync: (...args: unknown[]) => void };
+  const originalRenameSync = fs.renameSync;
+  let transientFailures = 0;
+  mutableFs.renameSync = ((from: unknown, to: unknown) => {
+    if (to === target && transientFailures < 8) {
+      transientFailures += 1;
+      throw Object.assign(new Error("simulated Windows file lock"), { code: "EPERM" });
+    }
+    (originalRenameSync as unknown as (...args: unknown[]) => void)(from, to);
+  }) as (...args: unknown[]) => void;
+  try {
+    atomicWriteFile(target, JSON.stringify({ version: "new" }));
+    assert.equal(transientFailures, 8);
+    assert.deepEqual(JSON.parse(fs.readFileSync(target, "utf8")), { version: "new" });
+    assert.deepEqual(fs.readdirSync(root).filter((name) => name.endsWith(".tmp")), []);
+  } finally {
+    mutableFs.renameSync = originalRenameSync as unknown as (...args: unknown[]) => void;
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("listJobs ignores temp files and reports unreadable records", () => {

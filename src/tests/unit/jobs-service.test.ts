@@ -23,7 +23,7 @@ import {
   runWorker,
   startJob
 } from "../../jobs/service";
-import { loadJob, readTerminalReadReceipt, readTerminalSnapshot, readTreeConfirmation, saveJob, writeCancelIntent, writeTreeConfirmation } from "../../jobs/store";
+import { JobStoreError, loadJob, readTerminalReadReceipt, readTerminalSnapshot, readTreeConfirmation, saveJob, writeCancelIntent, writeTreeConfirmation } from "../../jobs/store";
 import { appendUserMessageOrThrow, loadUserMessagesInfo } from "../../jobs/messages";
 import type { JobRunner, ModelCandidate } from "../../jobs/runner";
 import { emptyUsage, isTerminalStatus, type JobRecord } from "../../jobs/types";
@@ -1054,6 +1054,68 @@ test("prepareContinuation refuses when the recorded ROOT is dead but the tree is
     if (res.ok) throw new Error("unreachable");
     assert.equal(res.code, "old_tree_unconfirmed");
     assert.equal(loadJob(root, job.id)!.generation, 0, "no new generation may start over an unproven tree");
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a transient heartbeat persistence error is logged and retried without killing the active task", { skip: process.platform !== "win32" }, async () => {
+  const dir = newTmp();
+  const root = path.join(dir, "root");
+  const cwd = path.join(dir, "cwd");
+  fs.mkdirSync(cwd, { recursive: true });
+  const fixture = path.join(dir, "delayed-success-fixture.js");
+  fs.writeFileSync(
+    fixture,
+    [
+      'const out = (o) => process.stdout.write(JSON.stringify(o) + "\\n");',
+      'let input = "";',
+      'process.stdin.setEncoding("utf8");',
+      'process.stdin.on("data", (d) => { input += d; });',
+      'process.stdin.on("end", () => {',
+      '  const sid = "fx-persist-retry";',
+      '  out({ type: "event", event: { type: "run_start", sessionId: sid } });',
+      '  setTimeout(() => {',
+      '    out({ type: "result", subtype: "success", result: "ok:" + input.trim(), session_id: sid, stop_reason: "end_turn" });',
+      '    process.exit(0);',
+      '  }, 300);',
+      '});'
+    ].join("\n"),
+    "utf8"
+  );
+  try {
+    const job = createJobRecord({ task: "continue after transient persistence error", cwd });
+    saveJob(root, job);
+    let clock = Date.parse("2026-10-01T00:00:00.000Z");
+    const now = (): Date => new Date((clock += 1000));
+    let injected = false;
+    const saveJobFn: typeof saveJob = (saveRoot, record, saveNow) => {
+      const previous = loadJob(saveRoot, record.id);
+      if (!injected && record.childPid != null && previous && record.heartbeatAt !== previous.heartbeatAt) {
+        injected = true;
+        throw new JobStoreError("write_failed", "atomic write failed: simulated EPERM", "EPERM");
+      }
+      return saveJob(saveRoot, record, saveNow);
+    };
+    const result = await runWorker({
+      root,
+      jobId: job.id,
+      createRunner: async (ctx) => createFixtureRunner(fixture, ctx.env),
+      heartbeatMs: 25,
+      now,
+      saveJobFn,
+      platform: "win32",
+      isAliveFn: () => false,
+      enumerateFn: async () => ({ ok: true, processes: [] })
+    });
+    assert.equal(injected, true, "the test injected a write failure on an in-flight heartbeat");
+    assert.equal(result.status, "done", JSON.stringify({ result, record: loadJob(root, job.id) }));
+    const saved = loadJob(root, job.id)!;
+    assert.equal(saved.status, "done");
+    assert.ok(saved.attempts[0]?.endedAt);
+    const diagnostics = fs.readFileSync(path.join(root, "logs", job.id + ".worker.log"), "utf8");
+    assert.match(diagnostics, /job_record_persist_transient_failure/);
+    assert.match(diagnostics, /job_record_persist_recovered/);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

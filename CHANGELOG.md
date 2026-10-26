@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0-beta — 2026-10-26 (pre-release)
+
+- Classifies WorkBuddy AI rate-limit fallback using trusted numeric HTTP 429 evidence rather than fixed English wording; other status codes and assistant text do not trigger fallback.
+- Prevents transient Windows job-record replacement failures from terminating an active worker: bounded retries, recoverable in-flight persistence, and safe cancellation after repeated failures.
+- Fixes the Hub's blank scroll tail and constrains Live activity panel resizing to the remaining workspace, including shorter windows.
+- This beta continues to support Command Code and WorkBuddy AI only. It does not add WorkBuddy CN or Qoder support.
+
+
 ## 0.1.9 — 2026-10-17
 
 - Adds compatibility for WorkBuddy AI 5.8.4's changed Desktop helper packaging while keeping the older package layout as a fallback.

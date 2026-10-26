@@ -904,6 +904,60 @@ test("an already-open Hub Jobs page shows a newly created session within one pol
       "a mode change whose note fits at 13px leaves no tooltip"
     );
     console.log(`[hub-ui-browser] EV3 plan note (permission=plan): ${JSON.stringify(noteText)}`);
+    // A long live-activity list must scroll inside #log, never the page itself.
+    // Wheel events at the bottom previously could expose a blank document tail.
+    await page.evaluate(`document.getElementById("navJobs").click()`);
+    await waitForPage(page.evaluate, () => `!document.getElementById("consoleView").classList.contains("hidden")`, 5000, "Jobs view is visible for the scroll test");
+    await setViewport(cdp, page, 1280, 720);
+    const beforeWheel = await page.evaluate(`(() => {
+      const log = document.getElementById("log");
+      log.replaceChildren();
+      for (let i = 0; i < 500; i += 1) {
+        const row = document.createElement("div");
+        row.className = "log-entry";
+        row.textContent = "Layout regression row " + i;
+        log.appendChild(row);
+      }
+      log.scrollTop = log.scrollHeight;
+      const rect = (node) => { const r = node.getBoundingClientRect(); return { top:r.top, bottom:r.bottom, height:r.height }; };
+      return {
+        viewportHeight: window.innerHeight,
+        documentHeight: document.documentElement.scrollHeight,
+        documentClientHeight: document.documentElement.clientHeight,
+        bodyScrollHeight: document.body.scrollHeight,
+        scrollY: window.scrollY,
+        app: rect(document.querySelector(".app")),
+        live: rect(document.getElementById("live")),
+        statusbar: rect(document.getElementById("statusbar")),
+        logClientHeight: log.clientHeight,
+        logScrollHeight: log.scrollHeight,
+        logScrollTop: log.scrollTop
+      };
+    })()`);
+    assert.ok(beforeWheel.logScrollHeight > beforeWheel.logClientHeight, "fixture fills the live log beyond its visible viewport");
+    assert.equal(beforeWheel.scrollY, 0, `the page itself must not scroll: ${JSON.stringify(beforeWheel)}`);
+    assert.ok(beforeWheel.documentHeight <= beforeWheel.documentClientHeight + 1, `document has no vertical tail: ${JSON.stringify(beforeWheel)}`);
+    assert.ok(beforeWheel.app.top >= 0 && beforeWheel.app.bottom <= beforeWheel.viewportHeight + 1, `app shell fits the viewport: ${JSON.stringify(beforeWheel)}`);
+    assert.ok(beforeWheel.live.bottom <= beforeWheel.statusbar.top + 1, `live panel stays above the status bar: ${JSON.stringify(beforeWheel)}`);
+    const logRect = await page.evaluate(`(() => { const r=document.getElementById("log").getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2}; })()`);
+    await cdp.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: logRect.x, y: logRect.y }, page.sessionId);
+    for (let i = 0; i < 5; i += 1) {
+      await cdp.send("Input.dispatchMouseEvent", { type: "mouseWheel", x: logRect.x, y: logRect.y, deltaX: 0, deltaY: 120 }, page.sessionId);
+    }
+    const afterWheel = await page.evaluate(`({scrollY:window.scrollY, documentHeight:document.documentElement.scrollHeight, documentClientHeight:document.documentElement.clientHeight, logScrollTop:document.getElementById("log").scrollTop, logScrollHeight:document.getElementById("log").scrollHeight})`);
+    assert.equal(afterWheel.scrollY, 0, `wheel at the live-log boundary never scrolls the page: ${JSON.stringify(afterWheel)}`);
+    assert.ok(afterWheel.documentHeight <= afterWheel.documentClientHeight + 1, `no blank page tail after wheel input: ${JSON.stringify(afterWheel)}`);
+    assert.ok(afterWheel.logScrollTop > 0, "the log remains the intended scroll container");
+    // The splitter's maximum is based on the actual remaining workspace, not
+    // a magic viewport subtraction; this matters when the window is shorter.
+    await setViewport(cdp, page, 1280, 600);
+    await page.evaluate(`(() => { const splitter=document.getElementById("splitter"); splitter.focus(); for(let i=0;i<100;i++) splitter.dispatchEvent(new KeyboardEvent("keydown",{key:"ArrowUp",bubbles:true})); })()`);
+    const resizedGeometry = await page.evaluate(`(() => { const rect=(node)=>{const r=node.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height};}; return {viewport:window.innerHeight,live:rect(document.getElementById("live")),workspace:rect(document.querySelector(".workspace")),statusbar:rect(document.getElementById("statusbar")),documentHeight:document.documentElement.scrollHeight,documentClientHeight:document.documentElement.clientHeight,scrollY:window.scrollY}; })()`);
+    assert.ok(resizedGeometry.live.bottom <= resizedGeometry.statusbar.top + 1, `resizing the live panel never clips below the workspace/status bar: ${JSON.stringify(resizedGeometry)}`);
+    assert.ok(resizedGeometry.documentHeight <= resizedGeometry.documentClientHeight + 1 && resizedGeometry.scrollY === 0, `resizing cannot create a blank page tail: ${JSON.stringify(resizedGeometry)}`);
+    console.log(`[hub-ui-browser] splitter short viewport: ${JSON.stringify(resizedGeometry)}`);
+    console.log(`[hub-ui-browser] live log boundary: ${JSON.stringify({beforeWheel,afterWheel})}`);
+
   } finally {
     if (cdp) cdp.close();
     if (chrome) {
