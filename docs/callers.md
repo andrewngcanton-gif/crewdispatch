@@ -2,6 +2,10 @@
 
 CrewDispatch can be used from MCP-capable callers. Caller integration is separate from execution providers: Codex/Claude submit and collect CrewDispatch jobs, while Command Code or WorkBuddy AI performs the provider work.
 
+## Repairing acceptance defects
+
+For a small, well-understood local defect, the reviewing model can fix it directly after the worker stops and releases the workspace, then inspect its changes and run the affected checks. This avoids another worker generation and model-review round while preserving the required boundary tests and regression evidence. Judge scope by risk and verification needs, not line count; honor an explicitly read-only audit. Broader, uncertain or high-risk repairs use `crewdispatch_follow_up` on the same job with a delta packet describing the new evidence, required change, any local reviewer edits and checks to rerun. Use `crewdispatch_spawn` for an independent objective. When an external controller owns acceptance, that controller decides and performs direct repairs; a protocol bridge only forwards an explicitly requested follow-up.
+
 ## Codex
 
 The normal Windows/macOS installer automatically registers the CrewDispatch local Codex plugin and the composer prompt. After installation, fully restart Codex/ChatGPT Desktop, then use:
